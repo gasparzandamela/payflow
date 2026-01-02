@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -30,7 +30,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login onLogin={(u) => setUser(u)} />} />
         <Route path="/register" element={<Register onRegister={(u) => setUser(u)} />} />
@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 
