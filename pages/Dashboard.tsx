@@ -1,8 +1,11 @@
 
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { User, Transaction } from '../types';
+import Card from '../components/Card';
+import Button from '../components/Button';
 
 interface DashboardProps {
   user: User;
@@ -14,7 +17,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
     <Layout user={user} title="Dia-a-Dia">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
         {/* Next Payment Card */}
-        <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300">
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Próxima Mensalidade</p>
@@ -33,18 +36,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Valor Total</p>
               <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">4.500,00 <span className="text-lg text-slate-400">MZN</span></p>
             </div>
-            <Link 
-              to="/pay"
-              className="px-6 py-4 bg-[#137FEC] hover:bg-blue-600 text-white text-sm font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group/btn"
-            >
-              <span>Pagar agora</span>
-              <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+            
+            <Link to="/pay">
+                <Button className="flex items-center gap-2 group/btn">
+                    <span>Pagar agora</span>
+                    <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                </Button>
             </Link>
           </div>
-        </div>
+        </Card>
 
         {/* Status Card */}
-        <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300">
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Status Académico</p>
@@ -67,11 +70,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
               <div className="bg-green-500 h-3 rounded-full transition-all duration-1000" style={{ width: '100%' }}></div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* History Table Section */}
-      <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-100">
+      <Card className="rounded-[2.5rem] p-6 md:p-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Histórico Recente</h2>
@@ -130,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
             )}
           </div>
         </div>
-      </div>
+      </Card>
       
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
@@ -146,3 +149,4 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
 };
 
 export default Dashboard;
+

@@ -1,7 +1,11 @@
 
+
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { PaymentDetails } from '../types';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import Logo from '../components/Logo';
 
 interface PaymentConfirmProps {
   details: PaymentDetails;
@@ -19,16 +23,11 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-slate-50 overflow-x-hidden">
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md px-10 py-4">
-        <div className="flex items-center gap-3">
-          <div className="size-8 flex items-center justify-center rounded-lg bg-[#137FEC]/10 text-[#137FEC]">
-            <span className="material-symbols-outlined text-xl font-bold">payments</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">PayFlow</h2>
-        </div>
+        <Logo size="md" />
       </header>
       
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[480px] rounded-[2rem] bg-white shadow-2xl shadow-slate-200 ring-1 ring-slate-100 overflow-hidden">
+        <Card className="w-full max-w-[480px] p-0 overflow-hidden shadow-2xl shadow-slate-200 ring-1 ring-slate-100">
           <div className="px-10 pt-10 pb-6 text-center">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
               <span className="material-symbols-outlined text-4xl text-[#137FEC]">verified_user</span>
@@ -77,21 +76,21 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
           </div>
           
           <div className="p-10 flex flex-col gap-4">
-            <button 
-              onClick={handleConfirm}
-              className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-[#137FEC] hover:bg-blue-600 px-6 py-4.5 text-base font-bold text-white transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]"
+            <Button 
+                onClick={handleConfirm}
+                className="w-full gap-2 shadow-lg shadow-blue-500/30 group"
+                icon={<span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>}
             >
-              <span>Confirmar e Pagar</span>
-              <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
-            </button>
-            <Link 
-              to="/pay"
-              className="flex w-full items-center justify-center rounded-xl px-6 py-3 text-sm font-bold text-slate-400 hover:text-slate-900 transition-colors"
-            >
-              Voltar para editar dados
+                Confirmar e Pagar
+            </Button>
+            
+            <Link to="/pay" className="w-full">
+                <Button variant="ghost" fullWidth className="text-slate-400 hover:text-slate-900">
+                   Voltar para editar dados
+                </Button>
             </Link>
           </div>
-        </div>
+        </Card>
       </main>
       
       <footer className="w-full py-8 text-center text-sm text-slate-400 font-medium">
@@ -102,3 +101,4 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
 };
 
 export default PaymentConfirm;
+

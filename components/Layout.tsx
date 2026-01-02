@@ -1,6 +1,9 @@
 
+
 import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Modal from './Modal';
+import Logo from './Logo';
 
 interface LayoutProps {
   children: ReactNode;
@@ -49,12 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex w-72 flex-col border-r border-slate-200 bg-white">
         <div className="flex h-20 items-center px-8 border-b border-slate-100">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-[#137FEC] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <span className="material-symbols-outlined text-xl font-bold">payments</span>
-            </div>
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">PayFlow</h1>
-          </Link>
+          <Logo />
         </div>
         <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-8">
           <div className="flex flex-col gap-2 flex-1">
@@ -83,12 +81,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
           ></div>
           <aside className="absolute inset-y-0 left-0 w-72 bg-white shadow-2xl animate-in slide-in-from-left duration-300">
             <div className="flex h-20 items-center justify-between px-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="size-8 rounded-lg bg-[#137FEC] flex items-center justify-center text-white">
-                  <span className="material-symbols-outlined text-lg">payments</span>
-                </div>
-                <span className="font-black text-slate-900">PayFlow</span>
-              </div>
+              <Logo size="md" />
               <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400">
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -173,42 +166,32 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
       </main>
 
       {/* Logout Confirmation Modal */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
-            onClick={() => setShowLogoutModal(false)}
-          ></div>
-          <div className="relative w-full max-w-sm rounded-[2.5rem] bg-white p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-4 duration-300">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
-                <span className="material-symbols-outlined text-4xl">logout</span>
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Deseja sair?</h3>
-              <p className="mt-3 text-sm text-slate-500 font-medium leading-relaxed">
-                Sua sessão atual será encerrada e você precisará se autenticar novamente.
-              </p>
-              
-              <div className="mt-10 flex w-full flex-col gap-3">
-                <button 
-                  onClick={handleLogout}
-                  className="w-full rounded-2xl bg-red-500 py-4.5 text-sm font-bold text-white shadow-xl shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
-                >
-                  Confirmar saída
-                </button>
-                <button 
-                  onClick={() => setShowLogoutModal(false)}
-                  className="w-full rounded-2xl bg-slate-100 py-4.5 text-sm font-bold text-slate-600 hover:bg-slate-200 active:scale-[0.98] transition-all"
-                >
-                  Manter conectado
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Deseja sair?"
+        description="Sua sessão atual será encerrada e você precisará se autenticar novamente."
+        icon="logout"
+        iconColor="text-red-500 bg-red-50"
+      >
+          <div className="flex w-full flex-col gap-3">
+            <button 
+              onClick={handleLogout}
+              className="w-full rounded-2xl bg-red-500 py-4.5 text-sm font-bold text-white shadow-xl shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
+            >
+              Confirmar saída
+            </button>
+            <button 
+              onClick={() => setShowLogoutModal(false)}
+              className="w-full rounded-2xl bg-slate-100 py-4.5 text-sm font-bold text-slate-600 hover:bg-slate-200 active:scale-[0.98] transition-all"
+            >
+              Manter conectado
+            </button>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };
 
 export default Layout;
+

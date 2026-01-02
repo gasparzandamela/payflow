@@ -1,8 +1,11 @@
 
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { PaymentDetails } from '../types';
+import Input from '../components/Input';
+import Button from '../components/Button';
 
 interface PaymentFormProps {
   onContinue: (details: PaymentDetails) => void;
@@ -97,112 +100,76 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) =>
               
               {/* Campo Entidade */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pointer-events-none">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest" htmlFor="entity">
                     Entidade
                   </label>
                   <span className="text-[10px] font-bold text-slate-300">5 DÍGITOS</span>
                 </div>
-                <div className="relative group">
-                  <input 
-                    className={`block w-full rounded-2xl border bg-slate-50/50 px-5 py-4.5 text-slate-900 font-bold placeholder-slate-300 focus:ring-4 transition-all outline-none ${
-                      errors.entity 
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100' 
-                        : 'border-slate-200 focus:border-[#137FEC] focus:ring-blue-50 group-hover:border-slate-300'
-                    }`} 
+                <Input
                     id="entity"
                     placeholder="21423"
                     value={formData.entity}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    type="text" 
+                    type="text"
                     maxLength={5}
-                  />
-                  {errors.entity && (
-                    <p className="mt-2 text-[11px] font-bold text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                      <span className="material-symbols-outlined text-[14px]">error</span>
-                      {errors.entity}
-                    </p>
-                  )}
-                </div>
+                    error={errors.entity}
+                    className="font-bold text-lg py-4"
+                />
               </div>
 
               {/* Campo Referência */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pointer-events-none">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest" htmlFor="reference">
                     Referência
                   </label>
                   <span className="text-[10px] font-bold text-slate-300">9 DÍGITOS</span>
                 </div>
-                <div className="relative group">
-                  <input 
-                    className={`block w-full rounded-2xl border bg-slate-50/50 px-5 py-4.5 text-slate-900 font-bold placeholder-slate-300 focus:ring-4 transition-all outline-none ${
-                      errors.reference 
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100' 
-                        : 'border-slate-200 focus:border-[#137FEC] focus:ring-blue-50 group-hover:border-slate-300'
-                    }`} 
-                    id="reference" 
+                <Input
+                    id="reference"
                     placeholder="123 456 789"
                     value={formData.reference}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    type="text" 
-                  />
-                  {errors.reference && (
-                    <p className="mt-2 text-[11px] font-bold text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                      <span className="material-symbols-outlined text-[14px]">error</span>
-                      {errors.reference}
-                    </p>
-                  )}
-                </div>
+                    type="text"
+                    error={errors.reference}
+                    className="font-bold text-lg py-4"
+                />
               </div>
 
               {/* Campo Montante */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pointer-events-none">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest" htmlFor="amount">
                     Montante
                   </label>
                   <span className="text-[10px] font-bold text-slate-300">VALOR EM MZN</span>
                 </div>
-                <div className="relative group">
-                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm pointer-events-none select-none">
-                    MZN
-                  </div>
-                  <input 
-                    className={`block w-full rounded-2xl border bg-slate-50/50 pl-16 pr-5 py-4.5 text-slate-900 font-black text-lg placeholder-slate-300 focus:ring-4 transition-all outline-none tabular-nums ${
-                      errors.amount 
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100' 
-                        : 'border-slate-200 focus:border-[#137FEC] focus:ring-blue-50 group-hover:border-slate-300'
-                    }`} 
-                    id="amount" 
+                <Input
+                    id="amount"
                     placeholder="0,00"
                     value={formData.amount}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    type="text" 
-                  />
-                  {errors.amount && (
-                    <p className="mt-2 text-[11px] font-bold text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                      <span className="material-symbols-outlined text-[14px]">error</span>
-                      {errors.amount}
-                    </p>
-                  )}
-                </div>
+                    type="text"
+                    error={errors.amount}
+                    startIcon={<span className="text-slate-400 font-black text-sm">MZN</span>}
+                    className="font-black text-lg py-4"
+                />
               </div>
 
-              <button 
+              <Button
                 onClick={handleContinue}
-                disabled={!isFormValid}
-                className={`mt-6 md:mt-10 flex w-full items-center justify-center rounded-[1.25rem] py-5 text-base md:text-lg font-black uppercase tracking-widest text-white transition-all shadow-2xl ${
-                  isFormValid 
-                    ? 'bg-[#137FEC] shadow-blue-500/30 hover:bg-blue-600 hover:shadow-blue-500/40 active:scale-[0.98]' 
-                    : 'bg-slate-200 cursor-not-allowed shadow-none text-slate-400'
+                disabled={!isFormValid as boolean}
+                variant={isFormValid ? 'primary' : 'secondary'} // Use secondary style or custom logic for disabled if needed, but 'primary' handles 'disabled' prop gracefully usually.
+                className={`mt-6 md:mt-10 py-5 rounded-[1.25rem] text-base md:text-lg font-black uppercase tracking-widest shadow-2xl ${
+                     !isFormValid ? 'bg-slate-200 text-slate-400 shadow-none border-0' : ''
                 }`}
               >
                 Prosseguir
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -212,3 +179,4 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) =>
 };
 
 export default PaymentForm;
+

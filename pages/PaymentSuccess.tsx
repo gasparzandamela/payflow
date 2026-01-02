@@ -1,7 +1,10 @@
 
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PaymentDetails, User } from '../types';
+import Card from '../components/Card';
+import Button from '../components/Button';
 
 interface PaymentSuccessProps {
   details: PaymentDetails;
@@ -34,16 +37,18 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
     <div className="bg-slate-50 min-h-screen flex flex-col overflow-x-hidden font-inter">
       <header className="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 md:px-10 py-4 md:h-20 flex items-center">
         <div className="flex items-center gap-3 max-w-[1200px] mx-auto w-full">
-          <div className="size-8 md:size-10 rounded-xl bg-green-500 flex items-center justify-center text-white shadow-lg shadow-green-500/20">
-            <span className="material-symbols-outlined text-xl md:text-2xl font-bold">check</span>
-          </div>
-          <h2 className="text-slate-900 text-lg md:text-xl font-black leading-tight tracking-tighter uppercase">PayFlow</h2>
+            <div className={`size-8 md:size-10 rounded-xl bg-green-500 flex items-center justify-center text-white shadow-lg shadow-green-500/20`}>
+                <span className={`material-symbols-outlined text-xl md:text-2xl font-bold`}>check</span>
+            </div>
+             <span className={`font-black tracking-tighter uppercase text-lg md:text-xl text-slate-900`}>
+              PayFlow
+            </span>
         </div>
       </header>
 
       <main className="flex-grow flex items-center justify-center p-4 md:p-8">
         <div className="flex flex-col max-w-[580px] w-full animate-in zoom-in-95 duration-500">
-          <div className="bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+          <Card className="rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl shadow-slate-200/50 relative overflow-hidden p-0">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-green-500 rounded-b-full"></div>
             
             <div className="pt-10 md:pt-16 pb-6 px-6 md:px-14 flex flex-col items-center text-center">
@@ -98,18 +103,23 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
             </div>
 
             <div className="px-6 md:px-10 pb-12 pt-6 flex flex-col sm:flex-row gap-3">
-              <button 
+              <Button 
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 bg-slate-900 hover:bg-black active:scale-[0.98] text-white font-black uppercase tracking-widest text-xs md:text-sm h-14 md:h-16 rounded-2xl transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center"
+                className="bg-slate-900 hover:bg-black text-white h-14 md:h-16 shadow-xl shadow-slate-900/20"
+                fullWidth
               >
                 Voltar ao Início
-              </button>
-              <button className="flex-1 bg-white border-2 border-slate-100 hover:bg-slate-50 active:scale-[0.98] text-slate-700 font-black uppercase tracking-widest text-xs md:text-sm h-14 md:h-16 rounded-2xl transition-all flex items-center justify-center gap-2 group">
-                <span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-y-0.5">download</span>
-                <span>Recibo PDF</span>
-              </button>
+              </Button>
+              <Button 
+                variant="secondary"
+                className="h-14 md:h-16 flex items-center justify-center gap-2 group"
+                icon={<span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-y-0.5">download</span>}
+                fullWidth
+              >
+                 Recibo PDF
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </main>
       
@@ -127,3 +137,4 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
 };
 
 export default PaymentSuccess;
+
