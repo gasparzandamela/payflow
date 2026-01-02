@@ -1,0 +1,103 @@
+[33mcommit ac08393971f92da9d9422b659f5d1d658efb9e21[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 21:04:23 2026 +0200
+
+    git: Add .env and .env.* to .gitignore.
+
+ .gitignore | 3 [32m+++[m
+ 1 file changed, 3 insertions(+)
+
+[33mcommit 9be3d0f450cfaa2476972b4d2c1f2420cad201d7[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 21:02:40 2026 +0200
+
+    Remover ficheiro .env do repositório
+
+ .env | 2 [31m--[m
+ 1 file changed, 2 deletions(-)
+
+[33mcommit 6d5f1c2a77cc22e2eec88a1fdaacaffca209176b[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Gaspar Ronaldo Zandamela <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 20:56:38 2026 +0200
+
+    Simplify README for running the app
+
+ README.md | 11 [32m+[m[31m----------[m
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+[33mcommit a147aec395bf5ea67fd144e1f1e479b71bad5d75[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 20:15:06 2026 +0200
+
+    feat: Implement user authentication with Supabase, including login, registration, and session management.
+
+ .env                  |   2 [32m+[m
+ App.tsx               |  44 [32m+++++++++++++++[m[31m--[m
+ README.md             |   5 [32m+[m[31m-[m
+ components/Layout.tsx |  62 [32m+++++++++++++[m[31m----------[m
+ package-lock.json     | 134 [32m+++++++++++++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ package.json          |   1 [32m+[m
+ pages/Login.tsx       |  43 [32m+++++++++++++[m[31m---[m
+ pages/Register.tsx    |  47 [32m+++++++++++++++[m[31m---[m
+ supabaseClient.ts     |  10 [32m++++[m
+ tsconfig.json         |   3 [32m+[m[31m-[m
+ vite-env.d.ts         |   1 [32m+[m
+ 11 files changed, 304 insertions(+), 48 deletions(-)
+
+[33mcommit 53da37e3d0b838799bebb395414dc8b3bd95eb69[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 19:46:20 2026 +0200
+
+    feat: Add Vercel deployment configuration and guide, enabling client-side routing with BrowserRouter.
+
+ App.tsx     |  6 [32m+++[m[31m---[m
+ DEPLOY.md   | 46 [32m++++++++++++++++++++++++++++++++++++++++++++++[m
+ vercel.json |  8 [32m++++++++[m
+ 3 files changed, 57 insertions(+), 3 deletions(-)
+
+[33mcommit bf3082106fe370b9d00bb66e1d380c8c878a4131[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 18:18:14 2026 +0200
+
+    feat: Implement initial payment flow UI including core components and pages for login, registration, dashboard, and payment processing.
+
+ components/AuthLayout.tsx |  38 [32m++++++++[m
+ components/Button.tsx     |  55 [32m++++++++++++[m
+ components/Card.tsx       |  26 [32m++++++[m
+ components/Input.tsx      |  72 [32m+++++++++++++++[m
+ components/Layout.tsx     |  73 [32m++++++[m[31m---------[m
+ components/Logo.tsx       |  42 [32m+++++++++[m
+ components/Modal.tsx      |  68 [32m++++++++++++++[m
+ pages/Dashboard.tsx       |  28 [32m+++[m[31m---[m
+ pages/Login.tsx           | 215 [32m++++++++++++++++++++[m[31m------------------------[m
+ pages/PaymentConfirm.tsx  |  38 [32m++++[m[31m----[m
+ pages/PaymentForm.tsx     |  94 [32m+++++++[m[31m-------------[m
+ pages/PaymentSuccess.tsx  |  37 [32m+++++[m[31m---[m
+ pages/Register.tsx        | 221 [32m+++++++++++++++++++++++[m[31m-----------------------[m
+ 13 files changed, 626 insertions(+), 381 deletions(-)
+
+[33mcommit 5eb781c3c284d347458058942242963374955233[m
+Author: Gaspar <gasparronaldo37@gmail.com>
+Date:   Fri Jan 2 17:52:08 2026 +0200
+
+    feat: Implement initial payment system with user authentication, payment forms, and confirmation pages.
+
+ .gitignore               |   24 [32m+[m
+ App.tsx                  |   85 [32m+++[m
+ README.md                |   20 [32m+[m
+ components/Layout.tsx    |  214 [32m++++++[m
+ index.html               |   40 [32m+[m
+ index.tsx                |   16 [32m+[m
+ metadata.json            |    5 [32m+[m
+ package-lock.json        | 1819 [32m++++++++++++++++++++++++++++++++++++++++++++++[m
+ package.json             |   22 [32m+[m
+ pages/Dashboard.tsx      |  148 [32m++++[m
+ pages/Login.tsx          |  160 [32m++++[m
+ pages/PaymentConfirm.tsx |  104 [32m+++[m
+ pages/PaymentForm.tsx    |  214 [32m++++++[m
+ pages/PaymentSuccess.tsx |  129 [32m++++[m
+ pages/Register.tsx       |  174 [32m+++++[m
+ tsconfig.json            |   29 [32m+[m
+ types.ts                 |   19 [32m+[m
+ vite.config.ts           |   23 [32m+[m
+ 18 files changed, 3245 insertions(+)
