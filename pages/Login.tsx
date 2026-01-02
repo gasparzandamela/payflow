@@ -7,6 +7,7 @@ import AuthLayout from '../components/AuthLayout';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
+import { supabase } from '../supabaseClient';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -14,14 +15,37 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('gaspar@exemplo.com');
-  const [password, setPassword] = useState('********');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin({ name: 'Gaspar', email });
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        // App.tsx auth observer will handle state update and redirection
+        // But we can trigger immediate navigation
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'Erro ao fazer login.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const Decoration = (
@@ -57,6 +81,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
   
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
+                  {error}
+                </div>
+              )}
               <div className="space-y-4">
                   <Input 
                     label="Endereço de E-mail"
@@ -92,12 +121,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                       required
                     />
                     <div className="flex justify-end mt-2">
-                       <a className="text-sm font-medium text-[#137FEC] hover:text-blue-600" href="#">Esqueceu a Senha?</a>
+                       <Link className="text-sm font-medium text-[#137FEC] hover:text-blue-600" to="#">Esqueceu a Senha?</Link>
                     </div>
                   </div>
               </div>
   
-              <Button type="submit" fullWidth>
+              <Button type="submit" fullWidth isLoading={loading} disabled={loading}>
                 Entrar
               </Button>
             </form>

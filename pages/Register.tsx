@@ -7,6 +7,7 @@ import AuthLayout from '../components/AuthLayout';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
+import { supabase } from '../supabaseClient';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
@@ -20,16 +21,45 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     if (password !== confirmPassword) {
-        // Simple alert for now, though ideally we'd set an error state
-        alert("As senhas não coincidem");
+        setError("As senhas não coincidem");
+        setLoading(false);
         return;
     }
-    onRegister({ name: name || 'Usuário', email });
-    navigate('/dashboard');
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+         // Optionally show a message to check email for confirmation if required
+         // For now, if auto-confirm is enabled or unnecessary, the auth state change will pick it up.
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'Erro ao criar conta.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const Decoration = (
@@ -93,6 +123,11 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
+                  {error}
+                </div>
+            )}
             <Input 
               label="Nome Completo"
               placeholder="ex: João Silva"
@@ -160,7 +195,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
               </p>
             </label>
             
-            <Button type="submit" className="mt-4 shadow-lg shadow-blue-500/20">
+            <Button type="submit" className="mt-4 shadow-lg shadow-blue-500/20" isLoading={loading} disabled={loading}>
               Criar Conta
             </Button>
           </form>

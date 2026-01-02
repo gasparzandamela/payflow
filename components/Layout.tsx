@@ -4,6 +4,7 @@ import React, { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Modal from './Modal';
 import Logo from './Logo';
+import { supabase } from '../supabaseClient';
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,40 +12,47 @@ interface LayoutProps {
   title?: string;
 }
 
+const menuItems = [
+  { name: 'Dia-a-Dia', icon: 'account_balance_wallet', path: '/dashboard' },
+  { name: 'Pagar', icon: 'payments', path: '/pay' },
+  { name: 'Configurações', icon: 'settings', path: '#' },
+];
+
+interface NavLinkProps {
+  item: typeof menuItems[0];
+  onClick?: () => void;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ item, onClick }) => {
+  const location = useLocation();
+  const isActive = location.pathname === item.path;
+  return (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all ${
+        isActive
+          ? 'bg-[#137FEC] text-white shadow-md shadow-blue-500/20'
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+      }`}
+    >
+      <span className={`material-symbols-outlined text-[22px] ${isActive ? 'fill-1' : ''}`}>
+        {item.icon}
+      </span>
+      <span className="text-sm font-bold">{item.name}</span>
+    </Link>
+  );
+};
+
 const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const menuItems = [
-    { name: 'Dia-a-Dia', icon: 'account_balance_wallet', path: '/dashboard' },
-    { name: 'Pagar', icon: 'payments', path: '/pay' },
-    { name: 'Configurações', icon: 'settings', path: '#' },
-  ];
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/login');
-  };
-
-  const NavLink = ({ item, onClick }: { item: typeof menuItems[0], onClick?: () => void }) => {
-    const isActive = location.pathname === item.path;
-    return (
-      <Link
-        to={item.path}
-        onClick={onClick}
-        className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all ${
-          isActive
-            ? 'bg-[#137FEC] text-white shadow-md shadow-blue-500/20'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-        }`}
-      >
-        <span className={`material-symbols-outlined text-[22px] ${isActive ? 'fill-1' : ''}`}>
-          {item.icon}
-        </span>
-        <span className="text-sm font-bold">{item.name}</span>
-      </Link>
-    );
   };
 
   return (
