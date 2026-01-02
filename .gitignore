@@ -13,6 +13,8 @@ dist-ssr
 *.local
 .env
 .env.*
+.md
+.md.*
 
 
 # Editor directories and files
