@@ -23,16 +23,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Try to get the user from Supabase via our proxy
-        // This will succeed only if the httpOnly cookies are valid
         const response = await fetch('/api/proxy/auth/v1/user');
         
         if (response.ok) {
-          const user = await response.json();
+          const u = await response.json();
           setUser({
-            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
-            email: user.email || '',
+            name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
+            email: u.email || '',
           });
+          // Fetch transactions after user is identified
+          fetchTransactions();
         } else {
           setUser(null);
         }
@@ -47,15 +47,43 @@ const App: React.FC = () => {
     checkSession();
   }, []);
 
-  const completePayment = (details: PaymentDetails) => {
-    const newTransaction: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
-      description: `Pagamento de Mensalidade - Entidade ${details.entity}`,
-      date: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date()),
-      amount: `${details.amount} MZN`,
-      status: 'Sucesso'
-    };
-    setHistory(prev => [newTransaction, ...prev]);
+  const fetchTransactions = async () => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching transactions:', error);
+    } else if (data) {
+      const formatted: Transaction[] = data.map(tx => ({
+        id: tx.id,
+        description: tx.description,
+        date: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(tx.created_at)),
+        amount: `${tx.amount} MZN`,
+        status: tx.status
+      }));
+      setHistory(formatted);
+    }
+  };
+
+  const completePayment = async (details: PaymentDetails) => {
+    const { error } = await supabase
+      .from('transactions')
+      .insert({
+        entity: details.entity,
+        reference: details.reference,
+        amount: parseFloat(details.amount.replace(',', '.')),
+        description: `Pagamento de Mensalidade - Entidade ${details.entity}`,
+        status: 'Sucesso'
+      });
+
+    if (error) {
+      console.error('Error saving transaction:', error);
+      alert('Erro ao processar pagamento no servidor. Verifique o console.');
+    } else {
+      fetchTransactions(); // Refresh history
+    }
   };
 
   if (isLoading) {
