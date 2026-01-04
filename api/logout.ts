@@ -1,10 +1,11 @@
 import { serialize } from 'cookie';
+import { withSentry } from './_lib/sentry';
 
 export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(request: Request) {
+async function handler(request: Request) {
   const cookieOptions = {
       httpOnly: true,
       secure: true,
@@ -30,3 +31,5 @@ export default async function handler(request: Request) {
   
   return new Response('Method not allowed', { status: 405 });
 }
+
+export default withSentry(handler);

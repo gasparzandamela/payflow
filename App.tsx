@@ -68,21 +68,23 @@ const App: React.FC = () => {
   };
 
   const completePayment = async (details: PaymentDetails) => {
-    const { error } = await supabase
-      .from('transactions')
-      .insert({
-        entity: details.entity,
-        reference: details.reference,
-        amount: parseFloat(details.amount.replace(',', '.')),
-        description: `Pagamento de Mensalidade - Entidade ${details.entity}`,
-        status: 'Sucesso'
+    try {
+      const response = await fetch('/api/payments/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(details),
       });
 
-    if (error) {
-      console.error('Error saving transaction:', error);
-      alert('Erro ao processar pagamento no servidor. Verifique o console.');
-    } else {
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao processar pagamento');
+      }
+
       fetchTransactions(); // Refresh history
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      alert(err.message || 'Erro ao processar pagamento. Tente novamente.');
     }
   };
 

@@ -1,0 +1,29 @@
+import * as Sentry from "@sentry/node";
+
+const dsn = process.env.VITE_SENTRY_DSN;
+
+if (dsn) {
+  Sentry.init({
+    dsn: dsn,
+    tracesSampleRate: 1.0,
+  });
+}
+
+export const withSentry = (handler: Function) => {
+  return async (request: Request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      console.error('Edge Function Error:', error);
+      if (dsn) {
+        Sentry.captureException(error);
+        // Ensure logs are sent before the function terminates
+        await Sentry.flush(2000);
+      }
+      return new Response(JSON.stringify({ error: 'Internal Server Error', message: error instanceof Error ? error.message : String(error) }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  };
+};

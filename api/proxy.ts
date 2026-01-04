@@ -1,4 +1,5 @@
 import { parse, serialize } from 'cookie';
+import { withSentry } from './_lib/sentry';
 
 export const config = {
   runtime: 'edge',
@@ -23,7 +24,7 @@ async function refreshToken(refreshToken: string, supabaseUrl: string, supabaseK
     return data;
 }
 
-export default async function handler(request: Request) {
+async function handler(request: Request) {
     if (request.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
@@ -42,7 +43,6 @@ export default async function handler(request: Request) {
     }
 
     // Prepare target URL
-    // Remove 'path' from params to get the rest of the query
     const targetParams = new URLSearchParams();
     url.searchParams.forEach((val, key) => {
         if (key !== 'path') targetParams.append(key, val);
@@ -62,8 +62,6 @@ export default async function handler(request: Request) {
     headers.delete('host');
     headers.delete('cookie');
     headers.delete('connection');
-    // Ensure we don't pass the browser's origin as it might mismatch Supabase's expectation if strict? 
-    // Usually Supabase handles CORS if Key is valid.
 
     let tokenRefreshed = false;
     let newAccessToken = '';
@@ -76,17 +74,10 @@ export default async function handler(request: Request) {
         if (token) {
             h.set('Authorization', `Bearer ${token}`);
         } else {
-             // If no token, maybe ANON? supabase-js sends ANON key as bearer if no session.
-             // But we are injecting it.
              h.set('Authorization', `Bearer ${supabaseKey}`);
         }
         
         const body = ['GET', 'HEAD'].includes(request.method) ? null : request.body;
-        
-        // We need to clone the body if we might retry? 
-        // Request body can be used only once.
-        // If we need to retry, we must have buffered the body.
-        // Edge Functions: `request.clone()` works if body not used.
         
         return fetch(targetUrl, {
             method: request.method,
@@ -95,15 +86,6 @@ export default async function handler(request: Request) {
         });
     };
 
-    // If we have an access token, try directly.
-    // If not, but we have refresh token, try refreshing first (or logic could be try-fail-refresh).
-    // Optimistic: Try with access token if present. If 401, try refresh.
-
-    // Issue: Request body is a stream. If we read it for the first try, we can't use it for the second.
-    // We can verify token validity (simple JWT check) or just refresh if missing?
-    // Or we buffer the body?
-    
-    // For simplicity: If no access token but refresh token exists, refresh first.
     if (!accessToken && storedRefreshToken) {
         const session = await refreshToken(storedRefreshToken, supabaseUrl, supabaseKey);
         if (session) {
@@ -115,32 +97,9 @@ export default async function handler(request: Request) {
         }
     }
 
-    // Now try request
-    // We clone request in case we need to retry and body is streams (though `fetch` consumes it).
-    // Actually, if we haven't consumed `request.body`, we can pass it (but only once).
-    // If we suspect we might 401, we should probably buffer it if it's small, or rely on the logic that we already refreshed if needed.
-    // Let's assume if we have an access token (or just refreshed), it's valid.
-    
     let response = await doFetch(accessToken);
 
-    // If 401 and we haven't refreshed yet and have a refresh token
-    if (response.status === 401 && storedRefreshToken && !tokenRefreshed) {
-        // We can't easily retry the request if the body was a stream that is now consumed.
-        // `doFetch` passed `request.body`.
-        // If the body was used, we are stuck.
-        // Unless we cloned the request first?
-        // `const reqClone = request.clone()` before doFetch.
-        // But `request.clone()` clones the stream.
-        // Let's try to improve robustness later. For now, assume if 401, user needs to re-login or the client will handle error.
-        // But "Testes funcionam sem erros".
-        
-        // Let's rely on client to redirect to login if 401?
-        // Or better: The PROXY is the authoritative source.
-        // If we return 401, the client (ignorant of tokens) just sees 401.
-    }
-
     // Forward response
-    // If we refreshed tokens, set cookies
     const resHeaders = new Headers(response.headers);
     if (tokenRefreshed) {
         const cookieOptions = {
@@ -156,12 +115,12 @@ export default async function handler(request: Request) {
         resHeaders.append('Set-Cookie', serialize('sb-refresh-token', newRefreshToken, refreshOptions));
     }
     
-    // Clean up headers
-    resHeaders.delete('content-encoding'); // avoid double compression issues
-    // resHeaders.set('Access-Control-Allow-Origin', '*'); // Maybe needed for local dev
+    resHeaders.delete('content-encoding');
 
     return new Response(response.body, {
         status: response.status,
         headers: resHeaders,
     });
 }
+
+export default withSentry(handler);
