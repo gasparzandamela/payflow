@@ -36,23 +36,34 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name,
-          },
-        },
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          options: { data: { name } } 
+        }),
       });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Falha ao criar conta');
       }
 
-      if (data.user) {
-         // Optionally show a message to check email for confirmation if required
-         // For now, if auto-confirm is enabled or unnecessary, the auth state change will pick it up.
+      if (result.user) {
+         if (result.message === 'Check your email') {
+             alert('Conta criada! Por favor, verifique seu e-mail para confirmar a conta.');
+             navigate('/login');
+         } else {
+             // Auto-logged in
+             onRegister({
+               name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || 'Usuário',
+               email: result.user.email || '',
+             });
+             navigate('/dashboard');
+         }
       }
 
     } catch (err: any) {

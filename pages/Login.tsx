@@ -27,18 +27,26 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Falha na autenticação');
       }
 
-      if (data.user) {
-        // App.tsx auth observer will handle state update and redirection
-        // But we can trigger immediate navigation
+      if (result.user) {
+        // App.tsx auth observer won't work automatically now because we aren't using Supabase Auth client state
+        // We might need to refresh the page or call a callback
+        onLogin({
+          name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || 'Usuário',
+          email: result.user.email || '',
+        });
+        navigate('/dashboard');
       }
 
     } catch (err: any) {

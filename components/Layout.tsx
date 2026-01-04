@@ -51,10 +51,15 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     navigate('/login');
+    // Force a reload might be cleaner to clear all memory states
+    window.location.reload();
   };
-
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
       {/* Sidebar - Desktop */}

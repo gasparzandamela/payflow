@@ -21,31 +21,30 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'Usuário',
-          email: session.user.email || '',
-        });
-      }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'Usuário',
-          email: session.user.email || '',
-        });
-      } else {
+    const checkSession = async () => {
+      try {
+        // Try to get the user from Supabase via our proxy
+        // This will succeed only if the httpOnly cookies are valid
+        const response = await fetch('/api/proxy/auth/v1/user');
+        
+        if (response.ok) {
+          const user = await response.json();
+          setUser({
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+            email: user.email || '',
+          });
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Session check failed:', err);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkSession();
   }, []);
 
   const completePayment = (details: PaymentDetails) => {
@@ -70,8 +69,8 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={!user ? <Login onLogin={() => {}} /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register onRegister={() => {}} /> : <Navigate to="/dashboard" />} />
+        <Route path="/login" element={!user ? <Login onLogin={(u) => setUser(u)} /> : <Navigate to="/dashboard" />} />
+        <Route path="/register" element={!user ? <Register onRegister={(u) => setUser(u)} /> : <Navigate to="/dashboard" />} />
         
         <Route 
           path="/dashboard" 
