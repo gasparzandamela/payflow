@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/vercel-edge";
 
 const dsn = process.env.VITE_SENTRY_DSN;
 
