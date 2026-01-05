@@ -142,6 +142,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             <Input 
               label="Nome Completo"
               placeholder="ex: João Silva"
+              autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -149,6 +150,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             <Input 
               label="Endereço de E-mail"
               type="email"
+              autoComplete="email"
               placeholder="nome@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -158,6 +160,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                <Input 
                   label="Senha"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   containerClassName="flex-1"
                   placeholder="••••••••"
                   startIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
@@ -179,6 +182,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                 <Input 
                   label="Confirmar Senha"
                   type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   containerClassName="flex-1"
                   placeholder="••••••••"
                   startIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}

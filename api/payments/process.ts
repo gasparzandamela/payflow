@@ -76,7 +76,7 @@ async function handler(request: Request) {
       'Prefer': 'return=representation'
     },
     body: JSON.stringify({
-      user_id: userId,
+      // user_id is handled by database default auth.uid()
       entity,
       reference,
       amount: numericAmount,
@@ -88,13 +88,21 @@ async function handler(request: Request) {
   const resultData = await insertRes.json();
 
   if (!insertRes.ok) {
-    return new Response(JSON.stringify({ error: 'Erro ao gravar transação', details: resultData }), { 
+    console.error('Supabase Insert Error:', resultData);
+    return new Response(JSON.stringify({ 
+      error: 'Erro ao gravar transação', 
+      message: resultData.message || 'Erro desconhecido',
+      details: resultData 
+    }), { 
       status: insertRes.status,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  return new Response(JSON.stringify({ message: 'Pagamento processado com sucesso', data: resultData[0] }), {
+  return new Response(JSON.stringify({ 
+    message: 'Pagamento processado com sucesso', 
+    data: Array.isArray(resultData) ? resultData[0] : resultData 
+  }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   });

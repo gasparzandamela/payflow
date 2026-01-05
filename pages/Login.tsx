@@ -99,6 +99,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     label="Endereço de E-mail"
                     id="email"
                     type="email"
+                    autoComplete="email"
                     startIcon={<span className="material-symbols-outlined text-[20px]">mail</span>}
                     placeholder="name@company.com"
                     value={email}
@@ -111,6 +112,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                       label="Senha"
                       id="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       startIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
                       endIcon={
                         <button 
