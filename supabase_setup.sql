@@ -22,71 +22,59 @@ create table if not exists public.transactions (
     created_at timestamptz default now()
 );
 
--- 3. RLS - Profiles
--- Users can see their own profile
+-- 3. HELPER FUNCTION TO PREVENT RECURSION
+-- This function checks if a user is admin without triggering RLS
+create or replace function public.is_admin()
+returns boolean as $$
+begin
+  return exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+end;
+$$ language plpgsql security definer;
+
+-- 4. RLS - Profiles
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile"
-on public.profiles
-for select
+on public.profiles for select
 to authenticated
-using ( auth.uid() = id );
+using ( auth.uid() = id or public.is_admin() );
 
--- Users can update their own profile
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
-on public.profiles
-for update
+on public.profiles for update
 to authenticated
 using ( auth.uid() = id );
 
--- Admins can see all profiles
-create policy "Admins can view all profiles"
-on public.profiles
-for select
-to authenticated
-using (
-    exists (
-        select 1 from public.profiles
-        where profiles.id = auth.uid() and profiles.role = 'admin'
-    )
-);
-
--- 4. RLS - Transactions
--- Users can see their own transactions
+-- 5. RLS - Transactions
+drop policy if exists "Users can view own transactions" on public.transactions;
 create policy "Users can view own transactions"
-on public.transactions
-for select
+on public.transactions for select
 to authenticated
-using ( auth.uid() = user_id );
+using ( auth.uid() = user_id or public.is_admin() );
 
--- Users can insert their own transactions
+drop policy if exists "Users can insert own transactions" on public.transactions;
 create policy "Users can insert own transactions"
-on public.transactions
-for insert
+on public.transactions for insert
 to authenticated
 with check ( auth.uid() = user_id );
 
--- Admins can see all transactions
-create policy "Admins can view all transactions"
-on public.transactions
-for select
-to authenticated
-using (
-    exists (
-        select 1 from public.profiles
-        where profiles.id = auth.uid() and profiles.role = 'admin'
-    )
-);
-
--- 5. Handle user creation via Trigger (Auth to Profiles)
+-- 6. Handle user creation via Trigger
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, email)
-  values (new.id, new.raw_user_meta_data->>'name', new.email);
+  insert into public.profiles (id, full_name, email, role)
+  values (
+    new.id, 
+    coalesce(new.raw_user_meta_data->>'name', ''), 
+    new.email,
+    'student' -- Default role
+  );
   return new;
 end;
 $$ language plpgsql security definer;
 
--- Trigger for new user
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
