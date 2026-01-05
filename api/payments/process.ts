@@ -10,14 +10,21 @@ async function handler(request: Request) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseUrl = process.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
   const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return new Response('Configuration Error', { status: 500 });
+    return new Response('Configuration Error: Missing Supabase Env Vars', { status: 500 });
   }
 
-  const { entity, reference, amount } = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Body de requisição inválido' }), { status: 400 });
+  }
+
+  const { entity, reference, amount } = body;
 
   // 1. Validate Input
   if (!entity || !reference || !amount) {
@@ -57,9 +64,9 @@ async function handler(request: Request) {
   const userData = await userRes.json();
   const userId = userData.id;
 
-  // 3. Logic: Check if payment is valid (Simulando uma validação extra de negócio)
+  // 3. Logic: Check if payment is valid
   const numericAmount = parseFloat(amount.toString().replace(',', '.'));
-  if (numericAmount <= 0) {
+  if (isNaN(numericAmount) || numericAmount <= 0) {
       return new Response(JSON.stringify({ error: 'Montante inválido' }), { 
           status: 400,
           headers: { 'Content-Type': 'application/json' }
@@ -72,11 +79,11 @@ async function handler(request: Request) {
     headers: {
       'Content-Type': 'application/json',
       'apikey': supabaseKey,
-      'Authorization': `Bearer ${accessToken}`, // Pass user token so RLS works
+      'Authorization': `Bearer ${accessToken}`, 
       'Prefer': 'return=representation'
     },
     body: JSON.stringify({
-      // user_id is handled by database default auth.uid()
+      user_id: userId, // explicitly providing it just in case
       entity,
       reference,
       amount: numericAmount,
@@ -91,7 +98,7 @@ async function handler(request: Request) {
     console.error('Supabase Insert Error:', resultData);
     return new Response(JSON.stringify({ 
       error: 'Erro ao gravar transação', 
-      message: resultData.message || 'Erro desconhecido',
+      message: resultData.message || 'Erro desconhecido no banco de dados',
       details: resultData 
     }), { 
       status: insertRes.status,
@@ -109,4 +116,3 @@ async function handler(request: Request) {
 }
 
 export default withSentry(handler);
-

@@ -11,17 +11,21 @@ const corsHeaders = {
 };
 
 async function refreshToken(refreshToken: string, supabaseUrl: string, supabaseKey: string) {
-    const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseKey,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-    const data = await response.json();
-    if (!response.ok) return null;
-    return data;
+    try {
+        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (e) {
+        console.error('Refresh Token Error:', e);
+        return null;
+    }
 }
 
 async function handler(request: Request) {
@@ -29,24 +33,24 @@ async function handler(request: Request) {
         return new Response('ok', { headers: corsHeaders });
     }
 
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseKey) {
-        return new Response('Configuration Error', { status: 500 });
+        return new Response('Configuration Error: Missing Supabase Env Vars', { status: 500 });
     }
 
     const url = new URL(request.url);
-    const path = url.searchParams.get('path');
+    let path = url.searchParams.get('path') || '';
     
-    if (!path) {
-        return new Response('Missing path', { status: 400 });
-    }
+    // Clean path (remove leading slashes)
+    path = path.replace(/^\/+/, '');
 
     // Prepare target URL
     const targetParams = new URLSearchParams();
     url.searchParams.forEach((val, key) => {
         if (key !== 'path') targetParams.append(key, val);
     });
+    
     const queryString = targetParams.toString();
     const targetUrl = `${supabaseUrl}/${path}${queryString ? '?' + queryString : ''}`;
 
@@ -116,6 +120,8 @@ async function handler(request: Request) {
     }
     
     resHeaders.delete('content-encoding');
+    resHeaders.delete('content-length');
+    resHeaders.delete('transfer-encoding');
 
     return new Response(response.body, {
         status: response.status,
