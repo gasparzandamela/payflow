@@ -23,7 +23,6 @@ async function refreshToken(refreshToken: string, supabaseUrl: string, supabaseK
         if (!response.ok) return null;
         return await response.json();
     } catch (e) {
-        console.error('Refresh Token Error:', e);
         return null;
     }
 }
@@ -39,20 +38,13 @@ async function handler(request: Request) {
         return new Response('Configuration Error: Missing Supabase Env Vars', { status: 500 });
     }
 
+    // New way to extract path: take everything after /api/proxy/
     const url = new URL(request.url);
-    let path = url.searchParams.get('path') || '';
+    const proxyMatch = url.pathname.match(/\/api\/proxy\/(.*)/);
+    const path = proxyMatch ? proxyMatch[1] : '';
     
-    // Clean path (remove leading slashes)
-    path = path.replace(/^\/+/, '');
-
-    // Prepare target URL
-    const targetParams = new URLSearchParams();
-    url.searchParams.forEach((val, key) => {
-        if (key !== 'path') targetParams.append(key, val);
-    });
-    
-    const queryString = targetParams.toString();
-    const targetUrl = `${supabaseUrl}/${path}${queryString ? '?' + queryString : ''}`;
+    // Construct target URL including original query parameters
+    const targetUrl = `${supabaseUrl}/${path}${url.search}`;
 
     // Get Tokens
     const cookieHeader = request.headers.get('cookie') || '';
@@ -72,7 +64,6 @@ async function handler(request: Request) {
     let newRefreshToken = '';
     let newExpiresIn = 0;
 
-    // Helper to perform fetch
     const doFetch = async (token: string | undefined) => {
         const h = new Headers(headers);
         if (token) {
@@ -103,7 +94,6 @@ async function handler(request: Request) {
 
     let response = await doFetch(accessToken);
 
-    // Forward response
     const resHeaders = new Headers(response.headers);
     if (tokenRefreshed) {
         const cookieOptions = {
