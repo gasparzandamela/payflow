@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import FinancialDashboard from './pages/FinancialDashboard';
 import PaymentForm from './pages/PaymentForm';
 import PaymentConfirm from './pages/PaymentConfirm';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -28,10 +29,21 @@ const App: React.FC = () => {
         
         if (response.ok) {
           const u = await response.json();
+          
+          // Buscar perfil do utilizador para obter o papel
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', u.id)
+            .single();
+          
           setUser({
+            id: u.id,
             name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
             email: u.email || '',
+            role: profile?.role || 'student'
           });
+          
           // Fetch transactions after user is identified
           fetchTransactions();
         } else {
@@ -63,7 +75,8 @@ const App: React.FC = () => {
             description: tx.description,
             date: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(tx.created_at)),
             amount: `${tx.amount} MZN`,
-            status: tx.status
+            status: tx.status,
+            paymentMethod: tx.payment_method
           }));
           setHistory(formatted);
         }
@@ -83,16 +96,22 @@ const App: React.FC = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        // Now showing the specific message from the server (e.g. Supabase error details)
         throw new Error(result.message || result.error || 'Erro ao processar pagamento');
       }
 
-      await fetchTransactions(); // Refresh history
-      navigate('/pay/success'); // Move to success page
+      await fetchTransactions();
+      navigate('/pay/success');
     } catch (err: any) {
       console.error('Payment error:', err);
       alert(err.message || 'Erro ao processar pagamento. Tente novamente.');
     }
+  };
+
+  // Determinar dashboard baseado no papel
+  const getDashboardRedirect = () => {
+    if (!user) return '/login';
+    if (user.role === 'admin_financeiro') return '/financeiro';
+    return '/dashboard';
   };
 
   if (isLoading) {
@@ -105,14 +124,33 @@ const App: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={!user ? <Login onLogin={(u) => setUser(u)} /> : <Navigate to="/dashboard" />} />
-      <Route path="/register" element={!user ? <Register onRegister={(u) => setUser(u)} /> : <Navigate to="/dashboard" />} />
+      {/* Rotas de Autenticação */}
+      <Route 
+        path="/login" 
+        element={!user ? <Login onLogin={(u) => setUser(u)} /> : <Navigate to={getDashboardRedirect()} />} 
+      />
+      <Route 
+        path="/register" 
+        element={!user ? <Register onRegister={(u) => setUser(u)} /> : <Navigate to={getDashboardRedirect()} />} 
+      />
       
+      {/* Dashboard do Estudante */}
       <Route 
         path="/dashboard" 
         element={user ? <Dashboard user={user} history={history} /> : <Navigate to="/login" />} 
       />
       
+      {/* Dashboard Financeiro (apenas para admin_financeiro) */}
+      <Route 
+        path="/financeiro" 
+        element={
+          user?.role === 'admin_financeiro' 
+            ? <FinancialDashboard user={user} /> 
+            : <Navigate to={user ? '/dashboard' : '/login'} />
+        } 
+      />
+      
+      {/* Fluxo de Pagamento (estudantes) */}
       <Route 
         path="/pay" 
         element={
@@ -149,9 +187,11 @@ const App: React.FC = () => {
         } 
       />
 
-      <Route path="/" element={<Navigate to="/dashboard" />} />
+      {/* Rota padrão - redireciona baseado no papel */}
+      <Route path="/" element={<Navigate to={getDashboardRedirect()} />} />
     </Routes>
   );
 };
 
 export default App;
+
