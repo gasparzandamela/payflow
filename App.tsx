@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import FinancialDashboard from './pages/FinancialDashboard';
+import ExecutiveDashboard from './pages/ExecutiveDashboard';
 import PaymentForm from './pages/PaymentForm';
 import PaymentConfirm from './pages/PaymentConfirm';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -111,6 +112,7 @@ const App: React.FC = () => {
   const getDashboardRedirect = () => {
     if (!user) return '/login';
     if (user.role === 'admin_financeiro') return '/financeiro';
+    if (user.role === 'direcao') return '/direcao';
     return '/dashboard';
   };
 
@@ -146,6 +148,16 @@ const App: React.FC = () => {
         element={
           user?.role === 'admin_financeiro' 
             ? <FinancialDashboard user={user} /> 
+            : <Navigate to={user ? '/dashboard' : '/login'} />
+        } 
+      />
+
+      {/* Dashboard da Direcção (Transversal) */}
+      <Route 
+        path="/direcao" 
+        element={
+          user?.role === 'direcao' 
+            ? <ExecutiveDashboard user={user} /> 
             : <Navigate to={user ? '/dashboard' : '/login'} />
         } 
       />

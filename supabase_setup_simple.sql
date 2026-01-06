@@ -35,7 +35,7 @@ END $$;
 -- Tabela de transacções
 CREATE TABLE IF NOT EXISTS public.transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     description VARCHAR(200),
     amount DECIMAL(12,2) NOT NULL,
     status VARCHAR(20) DEFAULT 'Pendente',
@@ -81,7 +81,7 @@ AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role IN ('admin', 'admin_financeiro', 'direccao')
+    WHERE id = auth.uid() AND role IN ('admin', 'admin_financeiro', 'direcao')
   );
 END;
 $$;
@@ -101,12 +101,14 @@ DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_select_owner" ON public.profiles
 FOR SELECT TO authenticated USING (auth.uid() = id);
 
-CREATE POLICY "profiles_select_admin" ON public.profiles
+-- Regra 2: Admin/Direção vê todos
+CREATE POLICY "profiles_select_management" ON public.profiles
 FOR SELECT TO authenticated USING (public.is_admin());
 
 CREATE POLICY "profiles_update_owner" ON public.profiles
 FOR UPDATE TO authenticated USING (auth.uid() = id);
 
+-- Re-add the insert policy as it was not explicitly removed or replaced in the new block
 CREATE POLICY "profiles_insert_own" ON public.profiles
 FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
@@ -115,23 +117,30 @@ FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 -- ============================================================================
 
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transactions FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions FORCE ROW LEVEL SECURITY; -- Keep FORCE as it was in the original, not explicitly removed by the new policies.
 
 DROP POLICY IF EXISTS "transactions_select_owner" ON public.transactions;
 DROP POLICY IF EXISTS "transactions_select_admin" ON public.transactions;
 DROP POLICY IF EXISTS "transactions_insert_owner" ON public.transactions;
 DROP POLICY IF EXISTS "transactions_update_admin" ON public.transactions;
+DROP POLICY IF EXISTS "transactions_select_management" ON public.transactions; -- Drop new policy name if it existed
+DROP POLICY IF EXISTS "transactions_update_management" ON public.transactions; -- Drop new policy name if it existed
 
+-- 6. NOVAS POLÍTICAS PARA TRANSACTIONS
+-- Regra 1: Usuário vê suas próprias transações
 CREATE POLICY "transactions_select_owner" ON public.transactions
 FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
-CREATE POLICY "transactions_select_admin" ON public.transactions
+-- Regra 2: Admin/Direção vê todas
+CREATE POLICY "transactions_select_management" ON public.transactions
 FOR SELECT TO authenticated USING (public.is_admin());
 
+-- Regra 3: Inserção de transações
 CREATE POLICY "transactions_insert_owner" ON public.transactions
 FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "transactions_update_admin" ON public.transactions
+-- Regra 4: Admin/Financeiro pode actualizar transações
+CREATE POLICY "transactions_update_management" ON public.transactions
 FOR UPDATE TO authenticated USING (public.is_admin());
 
 -- ============================================================================

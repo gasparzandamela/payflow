@@ -16,14 +16,25 @@ UPDATE public.profiles
 SET role = 'admin_financeiro'
 WHERE email = 'email@exemplo.com';
 
+-- OPÇÃO 2: TORNAR UM UTILIZADOR EXISTENTE EM "ADMIN" (Acesso total)
+-- Substitua 'email@exemplo.com' pelo email do utilizador real.
+UPDATE public.profiles
+SET role = 'admin'
+WHERE email = 'email@exemplo.com';
 
--- OPÇÃO 2: VERIFICAR TODOS OS UTILIZADORES E SEUS PAPÉIS
+-- OPÇÃO 3: TORNAR UM UTILIZADOR EXISTENTE EM "DIRECAO" (Visão Transversal)
+-- Substitua 'email@exemplo.com' pelo email do utilizador real.
+UPDATE public.profiles
+SET role = 'direcao'
+WHERE email = 'email@exemplo.com';
+
+-- OPÇÃO 4: VERIFICAR TODOS OS UTILIZADORES E SEUS PAPÉIS
 SELECT id, email, name, role, created_at
 FROM public.profiles
 ORDER BY role DESC;
 
 
--- OPÇÃO 3: REVERTER UM UTILIZADOR PARA "STUDENT"
+-- OPÇÃO 5: REVERTER UM UTILIZADOR PARA "STUDENT"
 -- Substitua 'email@exemplo.com' pelo email do utilizador real.
 UPDATE public.profiles
 SET role = 'student'

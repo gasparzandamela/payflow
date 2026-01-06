@@ -8,18 +8,40 @@ import { supabase } from '../supabaseClient';
 
 interface LayoutProps {
   children: ReactNode;
-  user?: { name: string };
+  user?: { 
+    name: string;
+    role?: string;
+  };
   title?: string;
 }
 
-const menuItems = [
-  { name: 'Dia-a-Dia', icon: 'account_balance_wallet', path: '/dashboard' },
-  { name: 'Pagar', icon: 'payments', path: '/pay' },
-  { name: 'Configurações', icon: 'settings', path: '#' },
-];
+const getMenuItems = (role?: string) => {
+  if (role === 'admin_financeiro') {
+    return [
+      { name: 'Dashboard', icon: 'dashboard', path: '/financeiro' },
+      { name: 'Relatórios', icon: 'analytics', path: '/financeiro' },
+      { name: 'Configurações', icon: 'settings', path: '#' },
+    ];
+  }
+  
+  if (role === 'direcao') {
+    return [
+      { name: 'Direção', icon: 'monitoring', path: '/direcao' },
+      { name: 'Financeiro', icon: 'payments', path: '/direcao' },
+      { name: 'Académico', icon: 'school', path: '/direcao' },
+    ];
+  }
+
+  // Default Student Menu
+  return [
+    { name: 'Dia-a-Dia', icon: 'account_balance_wallet', path: '/dashboard' },
+    { name: 'Pagar', icon: 'payments', path: '/pay' },
+    { name: 'Configurações', icon: 'settings', path: '#' },
+  ];
+};
 
 interface NavLinkProps {
-  item: typeof menuItems[0];
+  item: { name: string, icon: string, path: string };
   onClick?: () => void;
 }
 
@@ -50,6 +72,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const currentMenuItems = getMenuItems(user?.role);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
@@ -69,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
         </div>
         <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-8">
           <div className="flex flex-col gap-2 flex-1">
-            {menuItems.map((item) => (
+            {currentMenuItems.map((item) => (
               <NavLink key={item.name} item={item} />
             ))}
           </div>
@@ -100,7 +124,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
               </button>
             </div>
             <nav className="p-4 space-y-2">
-              {menuItems.map((item) => (
+              {currentMenuItems.map((item) => (
                 <NavLink key={item.name} item={item} onClick={() => setIsMobileMenuOpen(false)} />
               ))}
             </nav>
@@ -138,7 +162,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
             {user && (
               <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-black text-slate-900 tracking-tight">{user.name.toUpperCase()}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Estudante</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  {user.role === 'admin_financeiro' ? 'Administração Financeira' : 
+                   user.role === 'direcao' ? 'Direção Geral' : 'Estudante'}
+                </span>
               </div>
             )}
             <div className="size-9 md:size-11 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200 overflow-hidden bg-slate-200 cursor-pointer hover:ring-[#137FEC] transition-all">
@@ -160,7 +187,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
 
         {/* Mobile Navigation (Bottom) */}
         <nav className="lg:hidden sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-2.5 z-50 px-2 pb-safe">
-          {menuItems.map((item) => {
+          {currentMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
