@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import FinancialDashboard from './pages/FinancialDashboard';
 import ExecutiveDashboard from './pages/ExecutiveDashboard';
+import SecretariatDashboard from './pages/SecretariatDashboard';
 import PaymentForm from './pages/PaymentForm';
 import PaymentConfirm from './pages/PaymentConfirm';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -113,6 +114,7 @@ const App: React.FC = () => {
     if (!user) return '/login';
     if (user.role === 'admin_financeiro') return '/financeiro';
     if (user.role === 'direcao') return '/direcao';
+    if (user.role === 'secretaria') return '/secretaria';
     return '/dashboard';
   };
 
@@ -158,6 +160,17 @@ const App: React.FC = () => {
         element={
           user?.role === 'direcao' 
             ? <ExecutiveDashboard user={user} /> 
+            : <Navigate to={user ? '/dashboard' : '/login'} />
+        } 
+      />
+      
+
+      {/* Dashboard da Secretaria */}
+      <Route 
+        path="/secretaria" 
+        element={
+          user?.role === 'secretaria' 
+            ? <SecretariatDashboard user={user} /> 
             : <Navigate to={user ? '/dashboard' : '/login'} />
         } 
       />
