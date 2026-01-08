@@ -40,13 +40,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (result.user) {
-        // App.tsx auth observer won't work automatically now because we aren't using Supabase Auth client state
-        // We might need to refresh the page or call a callback
+        // Fetch profile to get role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', result.user.id)
+          .single();
+
         onLogin({
+          id: result.user.id,
           name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || 'Usuário',
           email: result.user.email || '',
+          role: profile?.role || 'student'
         });
-        navigate('/dashboard');
+        navigate('/dashboard'); // App.tsx will redirect based on role
       }
 
     } catch (err: any) {

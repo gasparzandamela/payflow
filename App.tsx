@@ -31,34 +31,24 @@ const App: React.FC = () => {
         
         if (response.ok) {
           const u = await response.json();
-          console.log('User from Auth:', u); // Debug Log
           
           // Buscar perfil do utilizador para obter o papel
-          const { data: profile, error: profileError } = await supabase
+          const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', u.id)
             .single();
-
-          if (profileError) {
-             console.error('Error fetching profile:', profileError);
-          }
-          console.log('Profile from DB:', profile); // Debug Log
           
-          const finalRole = profile?.role || 'student';
-          console.log('Final determined role:', finalRole); // Debug Log
-
           setUser({
             id: u.id,
             name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
             email: u.email || '',
-            role: finalRole
+            role: profile?.role || 'student'
           });
           
           // Fetch transactions after user is identified
           fetchTransactions();
         } else {
-          console.log('No active session found.');
           setUser(null);
         }
       } catch (err) {
