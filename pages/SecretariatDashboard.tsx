@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Transaction, PaymentMethodType, PAYMENT_METHODS } from '../types'; // Adjust path if necessary
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../components/Modal';
 
 // Icons (using Material Icons strings as per other files)
 // Assumes a component/library renders them, but here we just pass strings or use simple placeholders if no Icon component exists.
@@ -14,6 +15,8 @@ interface Student extends User {
 }
 
 const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'students' | 'financial' | 'services' | 'notifications'>('students');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
@@ -156,6 +159,17 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
     }
   };
   
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    navigate('/login');
+    window.location.reload();
+  };
+  
   return (
     <div className="flex h-screen bg-slate-50">
       {/* Sidebar / Navigation */}
@@ -195,7 +209,15 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
         </nav>
         
         <div className="p-4 border-t border-slate-100">
-            <div className="flex items-center gap-3 px-4 py-3">
+             <button 
+              onClick={() => setShowLogoutModal(true)}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-red-500 hover:bg-red-50 transition-all group font-bold text-sm mb-2"
+            >
+              <span className="material-icons-outlined text-[22px]">logout</span>
+              <span>Encerrar Sessão</span>
+            </button>
+
+            <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 pt-4">
                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium text-xs">
                     {user.name.charAt(0)}
                 </div>
@@ -421,6 +443,30 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
           </div>
         </div>
       )}
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Deseja sair?"
+        description="Sua sessão atual será encerrada e você precisará se autenticar novamente."
+        icon="logout"
+        iconColor="text-red-500 bg-red-50"
+      >
+          <div className="flex w-full flex-col gap-3">
+            <button 
+              onClick={handleLogout}
+              className="w-full rounded-2xl bg-red-500 py-4.5 text-sm font-bold text-white shadow-xl shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
+            >
+              Confirmar saída
+            </button>
+            <button 
+              onClick={() => setShowLogoutModal(false)}
+              className="w-full rounded-2xl bg-slate-100 py-4.5 text-sm font-bold text-slate-600 hover:bg-slate-200 active:scale-[0.98] transition-all"
+            >
+              Manter conectado
+            </button>
+          </div>
+      </Modal>
     </div>
   );
 };
