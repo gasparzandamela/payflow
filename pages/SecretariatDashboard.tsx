@@ -1,40 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { User, Transaction, PaymentMethodType, PAYMENT_METHODS } from '../types'; // Adjust path if necessary
+import { User, Transaction, PaymentMethodType } from '../types'; // Adjust path if necessary
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
-
-// Icons (using Material Icons strings as per other files)
-// Assumes a component/library renders them, but here we just pass strings or use simple placeholders if no Icon component exists.
-// Looking at types.ts, icons are just strings. `Layout.tsx` probably renders them.
-// I will use a simple Icon helper here for local use if needed, or just standard HTML/CSS.
+import { ToastProvider, useToast } from '../components/Toast';
+import StudentRegistrationForm from '../components/StudentRegistrationForm';
 
 interface Student extends User {
   created_at?: string;
   status?: string; // from migration
 }
 
-const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
+const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'students' | 'financial' | 'services' | 'notifications'>('students');
+  
+  // Tabs: students | registration | financial | services | notifications
+  const [activeTab, setActiveTab] = useState<'students' | 'registration' | 'financial' | 'services' | 'notifications'>('students');
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Student Management State
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newStudent, setNewStudent] = useState({ name: '', email: '', password: '' });
+  // Removed old simple modal state
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   // Financial View State
   const [studentTransactions, setStudentTransactions] = useState<Transaction[]>([]);
 
-  // Enrollment State
-  const [enrollmentType, setEnrollmentType] = useState<'enrollment' | 'renewal' | 'cancellation' | null>(null);
-
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    if (activeTab === 'students') {
+       fetchStudents();
+    }
+  }, [activeTab]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -44,33 +43,12 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
       .eq('role', 'student')
       .order('name');
     
-    if (error) console.error('Error fetching students:', error);
+    if (error) {
+        console.error('Error fetching students:', error);
+        addToast('Erro ao carregar lista de estudantes.', 'error');
+    }
     else setStudents(data || []);
     setLoading(false);
-  };
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/students/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStudent)
-      });
-      
-      if (response.ok) {
-        alert('Estudante criado com sucesso!');
-        setShowCreateModal(false);
-        setNewStudent({ name: '', email: '', password: '' });
-        fetchStudents();
-      } else {
-        const err = await response.json();
-        alert('Erro ao criar: ' + (err.message || err.error));
-      }
-    } catch (error) {
-      console.error('Error creating student:', error);
-      alert('Erro de conexão.');
-    }
   };
 
   const loadStudentFinancials = async (studentId: string) => {
@@ -104,10 +82,6 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
       const amount = type === 'enrollment' ? 5000 : 2500; // Example values
       const description = type === 'enrollment' ? 'Matrícula Inicial' : 'Renovação de Matrícula';
 
-      // Insert Transaction directly (Secretariat has permission via policy or we assume functionality)
-      // Note: If policy doesn't allow Insert for 'secretaria', this will fail.
-      // We added `is_admin` to include `secretaria` in the migration, so they should be able to insert if logic uses `is_admin`.
-      
       const { error } = await supabase.from('transactions').insert({
           user_id: selectedStudent.id,
           description: description,
@@ -119,9 +93,9 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
       });
 
       if (error) {
-          alert('Erro ao registrar matrícula: ' + error.message);
+          addToast('Erro ao registrar matrícula: ' + error.message, 'error');
       } else {
-          alert('Matrícula registrada com sucesso!');
+          addToast('Matrícula registrada com sucesso!', 'success');
           loadStudentFinancials(selectedStudent.id);
       }
   };
@@ -132,7 +106,6 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
     if (!reason) return;
 
     // Log this cancellation (Service Log)
-    // Assuming service_logs table exists from migration
     const { error } = await supabase.from('service_logs').insert({
         student_id: selectedStudent.id,
         staff_id: user.id || user.id, // Authenticated user
@@ -142,7 +115,6 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
 
     if (error) {
         console.error('Log error', error);
-        // Fallback if table doesn't exist yet, just alert
     }
 
     // Update profile status if column exists
@@ -152,13 +124,13 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
         .eq('id', selectedStudent.id);
 
     if (profileError) {
-        alert('Erro ao cancelar: ' + profileError.message);
+        addToast('Erro ao cancelar: ' + profileError.message, 'error');
     } else {
-        alert('Matrícula cancelada.');
+        addToast('Matrícula cancelada.', 'success');
         fetchStudents(); // Refresh list to show status
     }
   };
-  
+
 
   const handleLogout = async () => {
     try {
@@ -192,9 +164,21 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
             }`}
           >
             <span className="material-icons-outlined">people</span>
-            Estudantes
+            Visão Geral
           </button>
           
+          <button 
+            onClick={() => setActiveTab('registration')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+              activeTab === 'registration' 
+                ? 'bg-[#137FEC]/10 text-[#137FEC]' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <span className="material-icons-outlined">person_add</span>
+            Novo Aluno
+          </button>
+
           <button 
             onClick={() => setActiveTab('services')}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
@@ -233,11 +217,13 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
       <div className="flex-1 overflow-auto">
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 z-10">
             <h2 className="text-xl font-bold text-slate-800 capitalize">
-                {activeTab === 'students' ? 'Gestão de Estudantes' : 'Atendimento e Serviços'}
+                {activeTab === 'students' ? 'Gestão de Estudantes' : 
+                 activeTab === 'registration' ? 'Matrícula de Novo Estudante' :
+                 'Atendimento e Serviços'}
             </h2>
             {activeTab === 'students' && (
                 <button 
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => setActiveTab('registration')}
                     className="bg-[#137FEC] hover:bg-[#137FEC]/90 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
                 >
                     <span className="material-icons-outlined text-[18px]">add</span>
@@ -247,6 +233,16 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
         </header>
 
         <div className="p-8">
+            {activeTab === 'registration' && (
+                <StudentRegistrationForm 
+                    onSuccess={() => {
+                        setActiveTab('students');
+                        fetchStudents();
+                    }}
+                    onCancel={() => setActiveTab('students')}
+                />
+            )}
+
             {activeTab === 'students' && (
                 <div className="flex gap-6">
                     {/* Student List */}
@@ -264,6 +260,8 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
                                 <tbody className="divide-y divide-slate-100">
                                     {loading ? (
                                         <tr><td colSpan={4} className="p-6 text-center">Carregando...</td></tr>
+                                    ) : students.length === 0 ? (
+                                         <tr><td colSpan={4} className="p-6 text-center text-slate-400">Nenhum estudante encontrado.</td></tr>
                                     ) : students.map(student => (
                                         <tr key={student.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4 font-medium text-slate-900">{student.name}</td>
@@ -298,11 +296,15 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
                     {/* Selected Student Detail Panel */}
                     {selectedStudent && (
                         <div className="w-1/2 flex flex-col gap-6">
-                            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-in slide-in-from-right duration-300">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold text-slate-800">{selectedStudent.name}</h3>
                                         <p className="text-slate-500 text-sm">{selectedStudent.email}</p>
+                                        <div className="flex gap-2 mt-2">
+                                            {selectedStudent.phone_number && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{selectedStudent.phone_number}</span>}
+                                            {selectedStudent.document_number && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">{selectedStudent.document_number}</span>}
+                                        </div>
                                     </div>
                                     <button onClick={() => setSelectedStudent(null)} className="text-slate-400 hover:text-slate-600">
                                         <span className="material-icons-outlined">close</span>
@@ -387,62 +389,6 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
         </div>
       </div>
 
-      {/* Create Student Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 m-4">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Adicionar Novo Aluno</h3>
-            <form onSubmit={handleCreateStudent} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/20 outline-none transition-all"
-                  value={newStudent.name}
-                  onChange={e => setNewStudent({...newStudent, name: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Institucional</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/20 outline-none transition-all"
-                  value={newStudent.email}
-                  onChange={e => setNewStudent({...newStudent, email: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Senha Temporária</label>
-                <input
-                  type="password"
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/20 outline-none transition-all"
-                  value={newStudent.password}
-                  onChange={e => setNewStudent({...newStudent, password: e.target.value})}
-                />
-              </div>
-              
-              <div className="flex gap-3 mt-8 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-[#137FEC] text-white font-medium rounded-lg hover:bg-[#137FEC]/90 transition-colors shadow-sm shadow-blue-200"
-                >
-                  Criar Aluno
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* Logout Confirmation Modal */}
       <Modal
         isOpen={showLogoutModal}
@@ -469,6 +415,14 @@ const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
       </Modal>
     </div>
   );
+};
+
+const SecretariatDashboard: React.FC<{ user: User }> = ({ user }) => {
+    return (
+        <ToastProvider>
+            <DashboardContent user={user} />
+        </ToastProvider>
+    );
 };
 
 export default SecretariatDashboard;

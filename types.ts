@@ -31,6 +31,20 @@ export interface User {
   name: string;
   email: string;
   role?: 'student' | 'admin_financeiro' | 'secretaria' | 'direcao';
+  // Extended Profile Fields
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  birth_date?: string;
+  gender?: string;
+  nationality?: string;
+  address?: string;
+  document_type?: 'BI' | 'PASSPORT' | 'DIRE' | 'OTHER';
+  document_number?: string;
+  phone_number?: string;
+  father_name?: string;
+  mother_name?: string;
+  status?: string; // from previous migration
 }
 
 export interface Transaction {
