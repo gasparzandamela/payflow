@@ -3,8 +3,11 @@ import { useToast } from '../components/Toast';
 
 interface StudentFormData {
   // Dados do Aluno (Tab 1)
-  fullName: string;
-  birthDate: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  
+  birthDate: string; // Stored as DD/MM/YYYY text for input, converted for API
   documentType: string;
   documentNumber: string;
   nationality: string;
@@ -12,17 +15,19 @@ interface StudentFormData {
   birthPlace: string;
   phone: string;
   address: string;
-  district: string;
   province: string;
   
-  // Other Tabs (Placeholders for now, keeping some previous data)
+  // Other Tabs
   email: string;
   fatherName: string;
   motherName: string;
 }
 
 const initialData: StudentFormData = {
-  fullName: '',
+  firstName: '',
+  middleName: '',
+  lastName: '',
+  
   birthDate: '',
   documentType: 'Selecione',
   documentNumber: '',
@@ -31,7 +36,6 @@ const initialData: StudentFormData = {
   birthPlace: '',
   phone: '',
   address: '',
-  district: 'Selecione',
   province: 'Selecione',
   
   email: '',
@@ -55,13 +59,24 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const tabs = [
     'Dados do Aluno',
     'Encarregado de Educação',
-    'Documentos',
-    'Informações Acadêmicas',
-    'Adicionais (Opcional)'
+    'Documentos'
   ];
 
   const handleChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDateChange = (value: string) => {
+    // Remove non-digits
+    const digits = value.replace(/\D/g, '');
+    let formatted = digits;
+    if (digits.length > 2) {
+        formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+    if (digits.length > 4) {
+        formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+    handleChange('birthDate', formatted);
   };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,8 +103,9 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
 
   const validate = (): boolean => {
     if (activeTab === 'Dados do Aluno') {
-        if (!formData.fullName) { addToast('Por favor, insira o Nome Completo.', 'error'); return false; }
-        if (!formData.birthDate) { addToast('Por favor, insira a Data de Nascimento.', 'error'); return false; }
+        if (!formData.firstName) { addToast('Por favor, insira o Nome.', 'error'); return false; }
+        if (!formData.lastName) { addToast('Por favor, insira o Apelido.', 'error'); return false; }
+        if (!formData.birthDate || formData.birthDate.length !== 10) { addToast('Por favor, insira a Data de Nascimento completa (dd/mm/aaaa).', 'error'); return false; }
         if (formData.documentType === 'Selecione') { addToast('Por favor, selecione o Tipo de Documento.', 'error'); return false; }
         if (!formData.documentNumber) { addToast('Por favor, insira o Número do Documento.', 'error'); return false; }
         if (formData.nationality === 'Selecione') { addToast('Por favor, selecione a Nacionalidade.', 'error'); return false; }
@@ -98,32 +114,30 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     return true;
   };
 
-  const splitName = (fullName: string) => {
-    const parts = fullName.trim().split(/\s+/);
-    const firstName = parts[0] || '';
-    const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
-    const middleName = parts.length > 2 ? parts.slice(1, -1).join(' ') : '';
-    return { firstName, middleName, lastName };
-  };
-
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { firstName, middleName, lastName } = splitName(formData.fullName);
+      // Reconstruct full name and formatted date for backend
+      const fullName = `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`;
+      
+      // Convert DD/MM/YYYY to YYYY-MM-DD for backend/DB if needed, or keep as string
+      const [day, month, year] = formData.birthDate.split('/');
+      const isoDate = `${year}-${month}-${day}`;
+
       const payload = {
         email: formData.email || `student.${Date.now()}@payflow.com`,
         password: 'temporary-pass',
         user_metadata: {
-            first_name: firstName, middle_name: middleName, last_name: lastName,
-            full_name: formData.fullName, document_type: formData.documentType,
+            first_name: formData.firstName, middle_name: formData.middleName, last_name: formData.lastName,
+            full_name: fullName, document_type: formData.documentType,
             document_number: formData.documentNumber, phone_number: formData.phone,
             nationality: formData.nationality, address: formData.address,
-            birth_place: formData.birthPlace, district: formData.district, province: formData.province,
+            birth_place: formData.birthPlace, province: formData.province,
             gender: formData.gender === 'Masculino' ? 'M' : 'F',
             father_name: formData.fatherName, mother_name: formData.motherName,
-            birth_date: formData.birthDate, role: 'student',
-            photo_url: photoPreview // In real app, upload this to storage first
+            birth_date: isoDate, role: 'student',
+            photo_url: photoPreview
         }
       };
       
@@ -145,8 +159,6 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm w-full h-full flex flex-col">
-       {/* Removed Top Header as requested */}
-       
        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
         {tabs.map((tab) => (
             <button
@@ -198,17 +210,31 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     </div>
                 </div>
 
-                {/* Form Fields Column - Compact Layout */}
+                {/* Form Fields Column */}
                 <div className="flex-1 flex flex-col gap-4">
                     {/* Identificação */}
                     <div>
                         <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados de Identificação</h3>
                         <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-12">
-                                <FormInput label="Nome Completo" required value={formData.fullName} onChange={v => handleChange('fullName', v)} />
+                            <div className="col-span-4">
+                                <FormInput label="Nome" required value={formData.firstName} onChange={v => handleChange('firstName', v)} />
                             </div>
+                            <div className="col-span-4">
+                                <FormInput label="Outros Nomes" value={formData.middleName} onChange={v => handleChange('middleName', v)} />
+                            </div>
+                            <div className="col-span-4">
+                                <FormInput label="Apelido" required value={formData.lastName} onChange={v => handleChange('lastName', v)} />
+                            </div>
+
                             <div className="col-span-3">
-                                <FormInput label="Data Nascimento" type="date" required value={formData.birthDate} onChange={v => handleChange('birthDate', v)} />
+                                <FormInput 
+                                    label="Data Nascimento" 
+                                    required 
+                                    value={formData.birthDate} 
+                                    onChange={handleDateChange} 
+                                    placeholder="dd/mm/aaaa"
+                                    maxLength={10}
+                                />
                             </div>
                             <div className="col-span-3">
                                  <FormSelect label="Tipo Documento" required value={formData.documentType} onChange={v => handleChange('documentType', v)}>
@@ -250,13 +276,8 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     <div>
                         <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Endereço de Residência</h3>
                          <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-6">
-                                <FormInput label="Morada" required value={formData.address} onChange={v => handleChange('address', v)} placeholder="Bairro, Rua, Casa..." />
-                            </div>
-                            <div className="col-span-3">
-                                <FormSelect label="Distrito" value={formData.district} onChange={v => handleChange('district', v)}>
-                                    <option>Selecione</option><option value="Maputo">Maputo</option><option value="Matola">Matola</option>
-                                </FormSelect>
+                            <div className="col-span-9">
+                                <FormInput label="Morada" required value={formData.address} onChange={v => handleChange('address', v)} placeholder="Bairro" />
                             </div>
                             <div className="col-span-3">
                                 <FormSelect label="Província" value={formData.province} onChange={v => handleChange('province', v)}>
@@ -266,7 +287,6 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                         </div>
                     </div>
                     
-                    {/* Buttons Row - moved inside to save space or kept at bottom */}
                     <div className="flex justify-end gap-3 mt-auto pt-4 border-t border-slate-100">
                         <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
                         <button onClick={() => { if(activeTab === 'Dados do Aluno') setActiveTab(tabs[1]); else handleSubmit(); }} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
@@ -287,11 +307,17 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   );
 };
 
-// Compact Form Components
-const FormInput = ({ label, required, value, onChange, type = "text", placeholder }: any) => (
+const FormInput = ({ label, required, value, onChange, type = "text", placeholder, maxLength }: any) => (
     <div>
         <label className="block text-[10px] font-bold text-slate-700 mb-1 uppercase">{label} {required && <span className="text-red-500">*</span>}</label>
-        <input type={type} className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+        <input 
+            type={type} 
+            className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]" 
+            value={value} 
+            onChange={e => onChange(e.target.value)} 
+            placeholder={placeholder}
+            maxLength={maxLength}
+        />
     </div>
 );
 const FormSelect = ({ label, required, value, onChange, children }: any) => (
