@@ -2,31 +2,41 @@ import React, { useState } from 'react';
 import { useToast } from '../components/Toast';
 
 interface StudentFormData {
-  // Personal
-  firstName: string;
-  middleName: string;
-  lastName: string;
+  // Dados do Aluno (Tab 1)
+  fullName: string;
   birthDate: string;
-  gender: string;
-  nationality: string;
-  // Identity
-  documentType: 'BI' | 'PASSPORT' | 'DIRE' | 'OTHER';
+  documentType: string;
   documentNumber: string;
-  // Contact
-  email: string;
+  nationality: string;
+  gender: string;
+  birthPlace: string;
   phone: string;
   address: string;
-  // Family
+  district: string;
+  province: string;
+  
+  // Other Tabs (Placeholders for now, keeping some previous data)
+  email: string;
   fatherName: string;
   motherName: string;
 }
 
 const initialData: StudentFormData = {
-  firstName: '', middleName: '', lastName: '',
-  birthDate: '', gender: 'M', nationality: 'Moçambicana',
-  documentType: 'BI', documentNumber: '',
-  email: '', phone: '', address: '',
-  fatherName: '', motherName: ''
+  fullName: '',
+  birthDate: '',
+  documentType: 'Selecione',
+  documentNumber: '',
+  nationality: 'Selecione',
+  gender: 'Masculino',
+  birthPlace: '',
+  phone: '',
+  address: '',
+  district: 'Selecione',
+  province: 'Selecione',
+  
+  email: '',
+  fatherName: '',
+  motherName: ''
 };
 
 interface Props {
@@ -38,75 +48,89 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const { addToast } = useToast();
   const [formData, setFormData] = useState<StudentFormData>(initialData);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('Dados do Aluno');
+
+  const tabs = [
+    'Dados do Aluno',
+    'Encarregado de Educação',
+    'Documentos',
+    'Informações Acadêmicas',
+    'Adicionais (Opcional)'
+  ];
 
   const handleChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validate = (): boolean => {
-    // BI Validator: 12 digits + 1 uppercase letter
-    if (formData.documentType === 'BI') {
-      const biRegex = /^[0-9]{12}[A-Z]$/;
-      if (!biRegex.test(formData.documentNumber)) {
-        addToast('Número de BI inválido. Formato: 12 dígitos + 1 letra maiúscula.', 'error');
-        return false;
-      }
-    }
-
-    // Passport Validator: 2 letters + 6 digits
-    if (formData.documentType === 'PASSPORT') {
-        const passRegex = /^[A-Z]{2}[0-9]{6}$/;
-        if (!passRegex.test(formData.documentNumber)) {
-          addToast('Passaporte inválido. Formato: 2 letras + 6 números.', 'error');
-          return false;
+    // Basic validation for the visible tab
+    if (activeTab === 'Dados do Aluno') {
+        if (!formData.fullName) {
+             addToast('Por favor, insira o Nome Completo.', 'error');
+             return false;
+        }
+        if (!formData.birthDate) {
+            addToast('Por favor, insira a Data de Nascimento.', 'error');
+            return false;
+        }
+        if (formData.documentType === 'Selecione') {
+            addToast('Por favor, selecione o Tipo de Documento.', 'error');
+            return false;
+        }
+        if (!formData.documentNumber) {
+            addToast('Por favor, insira o Número do Documento.', 'error');
+            return false;
+        }
+        if (formData.nationality === 'Selecione') {
+             addToast('Por favor, selecione a Nacionalidade.', 'error');
+             return false;
+        }
+        if (!formData.address) {
+             addToast('Por favor, insira a Morada.', 'error');
+             return false;
         }
     }
-
-    // Phone Validator: Moz prefixes
-    const phoneRegex = /^(\+258)?(82|83|84|85|86|87)[0-9]{7}$/;
-    if (!phoneRegex.test(formData.phone)) {
-        addToast('Número de celular inválido. Use um prefixo nacional válido (82/83/84/85/86/87).', 'error');
-        return false;
-    }
-
-    // Required fields check (basic)
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.address) {
-        addToast('Preencha os campos obrigatórios (Nome, Apelido, Email, Morada).', 'error');
-        return false;
-    }
-
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+    const middleName = parts.length > 2 ? parts.slice(1, -1).join(' ') : '';
+    return { firstName, middleName, lastName };
+  };
+
+  const handleSubmit = async () => {
     if (!validate()) return;
 
     setLoading(true);
     try {
-      // Assuming backend API endpoint handles the detailed structure. 
-      // If not, we might need to map keys or adjust the backend handler in `pages/api/students/create` (Edge Function)
-      // Since I can't see the backend code here, I assume it accepts a JSON body.
-      // I'll map frontend camelCase to snake_case expected by likely Supabase backend logic or `profiles` table directly.
-      
+      const { firstName, middleName, lastName } = splitName(formData.fullName);
+
+      // Construct payload compatible with backend
       const payload = {
-        email: formData.email,
-        password: 'temporary-pass', // Should be auto-generated or handled by backend
+        email: formData.email || `student.${Date.now()}@payflow.com`, // Fallback generation if email hidden
+        password: 'temporary-pass',
         user_metadata: {
-            first_name: formData.firstName,
-            middle_name: formData.middleName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`,
+            first_name: firstName,
+            middle_name: middleName,
+            last_name: lastName,
+            full_name: formData.fullName,
             document_type: formData.documentType,
             document_number: formData.documentNumber,
             phone_number: formData.phone,
             nationality: formData.nationality,
             address: formData.address,
+            // New fields mapping
+            birth_place: formData.birthPlace,
+            district: formData.district,
+            province: formData.province,
+            gender: formData.gender === 'Masculino' ? 'M' : 'F',
+            
             father_name: formData.fatherName,
             mother_name: formData.motherName,
             birth_date: formData.birthDate,
-            gender: formData.gender,
             role: 'student'
         }
       };
@@ -133,200 +157,302 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
-        <div>
-            <h2 className="text-2xl font-bold text-slate-900">Novo Registro de Estudante</h2>
-            <p className="text-slate-500 text-sm">Preencha os dados completos para efetuar a matrícula.</p>
+    <div className="bg-white rounded-md shadow-sm border border-slate-200 w-full max-w-6xl mx-auto flex flex-col h-[85vh]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="flex items-center gap-3">
+            <div className="bg-[#137FEC] p-2 rounded-lg">
+                <span className="material-icons-outlined text-white text-xl">school</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800">Cadastro de Aluno</h2>
         </div>
-        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
-            <span className="material-icons-outlined">close</span>
-        </button>
+        <div className="flex items-center gap-3">
+            <button className="px-4 py-2 text-sm font-medium text-[#137FEC] border border-[#137FEC]/30 rounded bg-[#137FEC]/5 hover:bg-[#137FEC]/10 transition-colors">
+                Matricula Provisória
+            </button>
+            <button className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded hover:bg-slate-50 transition-colors">
+                Guardar Rascunho
+            </button>
+            <button 
+                onClick={handleSubmit} 
+                className="px-4 py-2 text-sm font-bold text-white bg-[#00984A] rounded hover:bg-[#00984A]/90 transition-colors flex items-center gap-2"
+                disabled={loading}
+            >
+                {loading ? 'Processando...' : 'Submeter Matrícula'}
+                <span className="material-icons-outlined text-sm">chevron_right</span>
+            </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Section 1: Identificação */}
-        <section>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-l-4 border-[#137FEC] pl-3">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Primeiro Nome <span className="text-red-500">*</span></label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.firstName}
-                     onChange={e => handleChange('firstName', e.target.value)}
-                   />
-                </div>
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Outros Nomes</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.middleName}
-                     onChange={e => handleChange('middleName', e.target.value)}
-                   />
-                </div>
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">SobreNome (Apelido) <span className="text-red-500">*</span></label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.lastName}
-                     onChange={e => handleChange('lastName', e.target.value)}
-                   />
-                </div>
-                
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Data de Nascimento</label>
-                   <input 
-                     type="date" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.birthDate}
-                     onChange={e => handleChange('birthDate', e.target.value)}
-                   />
-                </div>
-                
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Gênero</label>
-                   <div className="flex gap-4 mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="gender" value="M" checked={formData.gender === 'M'} onChange={e => handleChange('gender', e.target.value)} className="accent-[#137FEC]" />
-                        <span className="text-sm text-slate-700">Masculino</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="gender" value="F" checked={formData.gender === 'F'} onChange={e => handleChange('gender', e.target.value)} className="accent-[#137FEC]" />
-                        <span className="text-sm text-slate-700">Feminino</span>
-                      </label>
-                   </div>
+      {/* Tabs */}
+      <div className="flex border-b border-slate-200 bg-slate-50 px-6">
+        {tabs.map((tab) => (
+            <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-4 text-sm font-medium transition-colors relative ${
+                    activeTab === tab 
+                        ? 'text-white bg-[#137FEC]' 
+                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+                style={{
+                    borderTopLeftRadius: '6px',
+                    borderTopRightRadius: '6px',
+                    marginBottom: '-1px' // Overlap border
+                }}
+            >
+                {tab}
+            </button>
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto p-8 bg-white">
+        {activeTab === 'Dados do Aluno' && (
+            <div className="flex gap-8">
+                {/* Photo Upload */}
+                <div className="w-48 flex-shrink-0">
+                    <div className="border border-slate-200 rounded-lg p-2 bg-slate-50 text-center">
+                        <div className="w-full aspect-[3/4] bg-slate-200 rounded-md mb-3 flex items-center justify-center text-slate-400 overflow-hidden">
+                             <span className="material-icons-outlined text-6xl">person</span>
+                        </div>
+                        <button className="w-full py-1.5 bg-white border border-slate-300 rounded text-xs font-medium text-slate-600 hover:bg-slate-50">
+                            Carregar Foto
+                        </button>
+                    </div>
                 </div>
 
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Nacionalidade</label>
-                   <select 
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                      value={formData.nationality}
-                      onChange={e => handleChange('nationality', e.target.value)}
-                   >
-                     <option value="Moçambicana">Moçambicana</option>
-                     <option value="Estrangeira">Estrangeira</option>
-                   </select>
-                </div>
-            </div>
-        </section>
+                {/* Form Fields */}
+                <div className="flex-1 space-y-8">
+                    {/* Identificação */}
+                    <section>
+                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Dados de Identificação</h3>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4">
+                                <FormRow label="Nome Completo" required>
+                                    <input 
+                                        type="text" 
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
+                                        value={formData.fullName}
+                                        onChange={(e) => handleChange('fullName', e.target.value)}
+                                    />
+                                </FormRow>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                                <div className="w-1/3">
+                                    <FormRow label="Data de Nascimento" required>
+                                        <div className="relative">
+                                            <input 
+                                                type="date" 
+                                                className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] pr-10"
+                                                value={formData.birthDate}
+                                                onChange={(e) => handleChange('birthDate', e.target.value)}
+                                            />
+                                        </div>
+                                    </FormRow>
+                                </div>
+                                <div className="w-1/3">
+                                    <FormRow label="Tipo de Documento" required>
+                                        <select 
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
+                                            value={formData.documentType}
+                                            onChange={(e) => handleChange('documentType', e.target.value)}
+                                        >
+                                            <option>Selecione</option>
+                                            <option value="BI">Bilhete de Identidade</option>
+                                            <option value="PASSPORT">Passaporte</option>
+                                            <option value="DIRE">DIRE</option>
+                                        </select>
+                                    </FormRow>
+                                </div>
+                            </div>
 
-        {/* Section 2: Documentos e Contacto */}
-        <section>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-l-4 border-[#137FEC] pl-3">Documentação e Contato</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Tipo de Documento</label>
-                   <select 
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                      value={formData.documentType}
-                      onChange={e => handleChange('documentType', e.target.value as any)}
-                   >
-                     <option value="BI">Bilhete de Identidade</option>
-                     <option value="PASSPORT">Passaporte</option>
-                     <option value="DIRE">DIRE</option>
-                     <option value="OTHER">Outro</option>
-                   </select>
-                </div>
-                <div className="lg:col-span-2">
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Número do Documento <span className="text-red-500">*</span></label>
-                   <input 
-                     type="text" 
-                     placeholder={formData.documentType === 'BI' ? '123456789012F' : 'AA123456'}
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none font-mono tracking-wider uppercase"
-                     value={formData.documentNumber}
-                     onChange={e => handleChange('documentNumber', e.target.value.toUpperCase())}
-                   />
-                   <p className="text-[10px] text-slate-400 mt-1">
-                     {formData.documentType === 'BI' ? 'Formato: 12 dígitos seguidos de 1 letra.' : 'Formato Passaporte: 2 letras seguidas de 6 dígitos.'}
-                   </p>
-                </div>
-                
-                 <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Celular <span className="text-red-500">*</span></label>
-                   <input 
-                     type="tel" 
-                     placeholder="84 123 4567"
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.phone}
-                     onChange={e => handleChange('phone', e.target.value)}
-                   />
-                </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Email Institucional/Pessoal <span className="text-red-500">*</span></label>
-                   <input 
-                     type="email" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.email}
-                     onChange={e => handleChange('email', e.target.value)}
-                   />
-                </div>
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Morada/Residência</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.address}
-                     onChange={e => handleChange('address', e.target.value)}
-                   />
-                </div>
-            </div>
-        </section>
+                            <div className="flex gap-4 items-start">
+                                <div className="w-1/2">
+                                     <FormRow label="Número do Documento" required>
+                                        <input 
+                                            type="text" 
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
+                                            value={formData.documentNumber}
+                                            onChange={(e) => handleChange('documentNumber', e.target.value)}
+                                        />
+                                        <p className="text-[10px] text-slate-400 mt-1">Documento provisório sujeito a validação.</p>
+                                    </FormRow>
+                                </div>
+                                <div className="w-1/2">
+                                     <FormRow label="Nacionalidade">
+                                        <select 
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
+                                            value={formData.nationality}
+                                            onChange={(e) => handleChange('nationality', e.target.value)}
+                                        >
+                                            <option>Selecione</option>
+                                            <option value="Moçambicana">Moçambicana</option>
+                                            <option value="Estrangeira">Estrangeira</option>
+                                        </select>
+                                    </FormRow>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <hr className="border-slate-100" />
 
-        {/* Section 3: Filiação */}
-        <section>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-l-4 border-[#137FEC] pl-3">Filiação</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Nome do Pai</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.fatherName}
-                     onChange={e => handleChange('fatherName', e.target.value)}
-                   />
-                </div>
-                <div>
-                   <label className="block text-xs font-medium text-slate-700 mb-1.5 uppercase">Nome da Mãe</label>
-                   <input 
-                     type="text" 
-                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#137FEC] focus:ring-2 focus:ring-[#137FEC]/10 transition-all outline-none"
-                     value={formData.motherName}
-                     onChange={e => handleChange('motherName', e.target.value)}
-                   />
+                    {/* Dados Pessoais */}
+                    <section>
+                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Dados Pessoais</h3>
+                        <div className="space-y-4">
+                            <FormRow label="Sexo" required>
+                                <div className="flex gap-6 py-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="gender" 
+                                            value="Masculino" 
+                                            checked={formData.gender === 'Masculino'}
+                                            onChange={(e) => handleChange('gender', e.target.value)}
+                                            className="text-[#137FEC] focus:ring-[#137FEC]"
+                                        />
+                                        <span className="text-sm text-slate-700">Masculino</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="gender" 
+                                            value="Feminino" 
+                                            checked={formData.gender === 'Feminino'}
+                                            onChange={(e) => handleChange('gender', e.target.value)}
+                                            className="text-[#137FEC] focus:ring-[#137FEC]"
+                                        />
+                                        <span className="text-sm text-slate-700">Feminino</span>
+                                    </label>
+                                </div>
+                            </FormRow>
+
+                            <FormRow label="Local de Nascimento">
+                                <input 
+                                    type="text" 
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
+                                    value={formData.birthPlace}
+                                    onChange={(e) => handleChange('birthPlace', e.target.value)}
+                                />
+                            </FormRow>
+
+                            <div className="w-1/2">
+                                <FormRow label="Telefone do Aluno (Opcional)">
+                                    <div className="flex">
+                                        <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">
+                                            +258
+                                        </span>
+                                        <input 
+                                            type="text" 
+                                            className="w-full border border-slate-300 rounded-r px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
+                                            value={formData.phone}
+                                            onChange={(e) => handleChange('phone', e.target.value)}
+                                        />
+                                    </div>
+                                </FormRow>
+                            </div>
+                        </div>
+                    </section>
+
+                     <hr className="border-slate-100" />
+
+                    {/* Endereço */}
+                    <section>
+                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Endereço de Residência</h3>
+                        <div className="space-y-4">
+                            <FormRow label="Morada" required>
+                                <input 
+                                    type="text" 
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
+                                    placeholder="ex: Bairro, Localidade"
+                                    value={formData.address}
+                                    onChange={(e) => handleChange('address', e.target.value)}
+                                />
+                            </FormRow>
+
+                            <div className="flex gap-4">
+                                <div className="w-1/2">
+                                    <FormRow label="Distrito">
+                                         <select 
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
+                                            value={formData.district}
+                                            onChange={(e) => handleChange('district', e.target.value)}
+                                        >
+                                            <option>Selecione</option>
+                                            <option value="Maputo">Maputo</option>
+                                            <option value="Matola">Matola</option>
+                                        </select>
+                                    </FormRow>
+                                </div>
+                                <div className="w-1/2">
+                                    <FormRow label="Província">
+                                         <select 
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
+                                            value={formData.province}
+                                            onChange={(e) => handleChange('province', e.target.value)}
+                                        >
+                                            <option>Selecione</option>
+                                            <option value="Maputo Cidade">Maputo Cidade</option>
+                                            <option value="Maputo Província">Maputo Província</option>
+                                        </select>
+                                    </FormRow>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
-        </section>
+        )}
+        
+        {activeTab !== 'Dados do Aluno' && (
+            <div className="flex items-center justify-center h-full text-slate-400 flex-col gap-4">
+                <span className="material-icons-outlined text-6xl">engineering</span>
+                <p>Módulo em desenvolvimento...</p>
+            </div>
+        )}
+      </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-             <button
-               type="button"
-               onClick={onCancel}
-               className="px-6 py-3 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors"
-               disabled={loading}
-             >
-               Cancelar
-             </button>
-             <button
-               type="submit"
-               className="px-8 py-3 rounded-xl bg-[#137FEC] text-white font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-               disabled={loading}
-             >
-               {loading && <span className="animate-spin h-4 w-4 rounded-full border-2 border-white/30 border-t-white"></span>}
-               {loading ? 'Processando...' : 'Registrar Matrícula'}
-             </button>
-        </div>
-      </form>
+      {/* Footer */}
+      <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+        <button 
+           onClick={onCancel}
+           className="px-6 py-2 rounded text-slate-600 font-medium border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+        >
+            Cancelar
+        </button>
+        <button 
+           onClick={() => {
+                // If on last tab, submit, else next tab
+                const currentIndex = tabs.indexOf(activeTab);
+                if (currentIndex < tabs.length - 1) {
+                    setActiveTab(tabs[currentIndex + 1]);
+                } else {
+                    handleSubmit();
+                }
+           }}
+           className="px-6 py-2 rounded text-white font-medium bg-[#00984A] hover:bg-[#00984A]/90 transition-colors flex items-center gap-2"
+        >
+            Próximo
+             <span className="material-icons-outlined text-sm">chevron_right</span>
+        </button>
+      </div>
     </div>
   );
 };
+
+// Helper Component for Form Layout logic
+const FormRow: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
+    <div className="grid grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-sm font-bold text-slate-700 text-right">
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <div>
+            {children}
+        </div>
+    </div>
+);
 
 export default StudentRegistrationForm;
