@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useToast } from '../components/Toast';
 
 interface StudentFormData {
@@ -49,6 +49,8 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState<StudentFormData>(initialData);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Dados do Aluno');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
     'Dados do Aluno',
@@ -62,33 +64,36 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            addToast('Imagem muito grande. Máximo 2MB.', 'error');
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            addToast('Por favor selecione um arquivo de imagem.', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            if (ev.target?.result) {
+                setPhotoPreview(ev.target.result as string);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
   const validate = (): boolean => {
-    // Basic validation for the visible tab
     if (activeTab === 'Dados do Aluno') {
-        if (!formData.fullName) {
-             addToast('Por favor, insira o Nome Completo.', 'error');
-             return false;
-        }
-        if (!formData.birthDate) {
-            addToast('Por favor, insira a Data de Nascimento.', 'error');
-            return false;
-        }
-        if (formData.documentType === 'Selecione') {
-            addToast('Por favor, selecione o Tipo de Documento.', 'error');
-            return false;
-        }
-        if (!formData.documentNumber) {
-            addToast('Por favor, insira o Número do Documento.', 'error');
-            return false;
-        }
-        if (formData.nationality === 'Selecione') {
-             addToast('Por favor, selecione a Nacionalidade.', 'error');
-             return false;
-        }
-        if (!formData.address) {
-             addToast('Por favor, insira a Morada.', 'error');
-             return false;
-        }
+        if (!formData.fullName) { addToast('Por favor, insira o Nome Completo.', 'error'); return false; }
+        if (!formData.birthDate) { addToast('Por favor, insira a Data de Nascimento.', 'error'); return false; }
+        if (formData.documentType === 'Selecione') { addToast('Por favor, selecione o Tipo de Documento.', 'error'); return false; }
+        if (!formData.documentNumber) { addToast('Por favor, insira o Número do Documento.', 'error'); return false; }
+        if (formData.nationality === 'Selecione') { addToast('Por favor, selecione a Nacionalidade.', 'error'); return false; }
+        if (!formData.address) { addToast('Por favor, insira a Morada.', 'error'); return false; }
     }
     return true;
   };
@@ -103,102 +108,57 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
     setLoading(true);
     try {
       const { firstName, middleName, lastName } = splitName(formData.fullName);
-
-      // Construct payload compatible with backend
       const payload = {
-        email: formData.email || `student.${Date.now()}@payflow.com`, // Fallback generation if email hidden
+        email: formData.email || `student.${Date.now()}@payflow.com`,
         password: 'temporary-pass',
         user_metadata: {
-            first_name: firstName,
-            middle_name: middleName,
-            last_name: lastName,
-            full_name: formData.fullName,
-            document_type: formData.documentType,
-            document_number: formData.documentNumber,
-            phone_number: formData.phone,
-            nationality: formData.nationality,
-            address: formData.address,
-            // New fields mapping
-            birth_place: formData.birthPlace,
-            district: formData.district,
-            province: formData.province,
+            first_name: firstName, middle_name: middleName, last_name: lastName,
+            full_name: formData.fullName, document_type: formData.documentType,
+            document_number: formData.documentNumber, phone_number: formData.phone,
+            nationality: formData.nationality, address: formData.address,
+            birth_place: formData.birthPlace, district: formData.district, province: formData.province,
             gender: formData.gender === 'Masculino' ? 'M' : 'F',
-            
-            father_name: formData.fatherName,
-            mother_name: formData.motherName,
-            birth_date: formData.birthDate,
-            role: 'student'
+            father_name: formData.fatherName, mother_name: formData.motherName,
+            birth_date: formData.birthDate, role: 'student',
+            photo_url: photoPreview // In real app, upload this to storage first
         }
       };
-
+      
       const response = await fetch('/api/students/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || err.error || 'Erro ao criar estudante');
+        const err = await response.json(); throw new Error(err.message || err.error || 'Erro ao criar estudante');
       }
-
       addToast('Estudante registrado com sucesso!', 'success');
       onSuccess();
     } catch (error: any) {
-      console.error('Registration Error:', error);
-      addToast(error.message || 'Erro de conexão.', 'error');
+      console.error('Registration Error:', error); addToast(error.message || 'Erro de conexão.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-md shadow-sm border border-slate-200 w-full max-w-6xl mx-auto flex flex-col h-[85vh]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-            <div className="bg-[#137FEC] p-2 rounded-lg">
-                <span className="material-icons-outlined text-white text-xl">school</span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-800">Cadastro de Aluno</h2>
-        </div>
-        <div className="flex items-center gap-3">
-            <button className="px-4 py-2 text-sm font-medium text-[#137FEC] border border-[#137FEC]/30 rounded bg-[#137FEC]/5 hover:bg-[#137FEC]/10 transition-colors">
-                Matricula Provisória
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded hover:bg-slate-50 transition-colors">
-                Guardar Rascunho
-            </button>
-            <button 
-                onClick={handleSubmit} 
-                className="px-4 py-2 text-sm font-bold text-white bg-[#00984A] rounded hover:bg-[#00984A]/90 transition-colors flex items-center gap-2"
-                disabled={loading}
-            >
-                {loading ? 'Processando...' : 'Submeter Matrícula'}
-                <span className="material-icons-outlined text-sm">chevron_right</span>
-            </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 bg-slate-50 px-6">
+    <div className="bg-white rounded-lg shadow-sm w-full h-full flex flex-col">
+       {/* Removed Top Header as requested */}
+       
+       <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
         {tabs.map((tab) => (
             <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-4 text-sm font-medium transition-colors relative ${
+                className={`px-5 py-3 text-xs font-bold uppercase tracking-wide transition-colors relative ${
                     activeTab === tab 
                         ? 'text-white bg-[#137FEC]' 
                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }`}
                 style={{
-                    borderTopLeftRadius: '6px',
-                    borderTopRightRadius: '6px',
-                    marginBottom: '-1px' // Overlap border
+                    borderTopLeftRadius: '6px', borderTopRightRadius: '6px', marginBottom: '-1px'
                 }}
             >
                 {tab}
@@ -206,252 +166,138 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         ))}
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8 bg-white">
-        {activeTab === 'Dados do Aluno' && (
-            <div className="flex gap-8">
-                {/* Photo Upload */}
+      <div className="flex-1 p-6 overflow-hidden flex flex-col">
+        {activeTab === 'Dados do Aluno' ? (
+            <div className="flex gap-6 h-full">
+                {/* Photo Upload Column */}
                 <div className="w-48 flex-shrink-0">
-                    <div className="border border-slate-200 rounded-lg p-2 bg-slate-50 text-center">
-                        <div className="w-full aspect-[3/4] bg-slate-200 rounded-md mb-3 flex items-center justify-center text-slate-400 overflow-hidden">
-                             <span className="material-icons-outlined text-6xl">person</span>
+                    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
+                        <div 
+                            className="w-full aspect-[3/4] bg-slate-200 rounded-md mb-3 flex items-center justify-center text-slate-400 overflow-hidden relative cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                             {photoPreview ? (
+                                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                             ) : (
+                                <span className="material-icons-outlined text-6xl">person</span>
+                             )}
                         </div>
-                        <button className="w-full py-1.5 bg-white border border-slate-300 rounded text-xs font-medium text-slate-600 hover:bg-slate-50">
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handlePhotoSelect} 
+                            accept="image/*" 
+                            className="hidden" 
+                        />
+                        <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full py-2 bg-white border border-slate-300 rounded text-xs font-bold text-slate-600 hover:bg-slate-50"
+                        >
                             Carregar Foto
                         </button>
                     </div>
                 </div>
 
-                {/* Form Fields */}
-                <div className="flex-1 space-y-8">
+                {/* Form Fields Column - Compact Layout */}
+                <div className="flex-1 flex flex-col gap-4">
                     {/* Identificação */}
-                    <section>
-                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Dados de Identificação</h3>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 gap-4">
-                                <FormRow label="Nome Completo" required>
-                                    <input 
-                                        type="text" 
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
-                                        value={formData.fullName}
-                                        onChange={(e) => handleChange('fullName', e.target.value)}
-                                    />
-                                </FormRow>
+                    <div>
+                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados de Identificação</h3>
+                        <div className="grid grid-cols-12 gap-3">
+                            <div className="col-span-12">
+                                <FormInput label="Nome Completo" required value={formData.fullName} onChange={v => handleChange('fullName', v)} />
                             </div>
-                            
-                            <div className="flex gap-4">
-                                <div className="w-1/3">
-                                    <FormRow label="Data de Nascimento" required>
-                                        <div className="relative">
-                                            <input 
-                                                type="date" 
-                                                className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] pr-10"
-                                                value={formData.birthDate}
-                                                onChange={(e) => handleChange('birthDate', e.target.value)}
-                                            />
-                                        </div>
-                                    </FormRow>
-                                </div>
-                                <div className="w-1/3">
-                                    <FormRow label="Tipo de Documento" required>
-                                        <select 
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
-                                            value={formData.documentType}
-                                            onChange={(e) => handleChange('documentType', e.target.value)}
-                                        >
-                                            <option>Selecione</option>
-                                            <option value="BI">Bilhete de Identidade</option>
-                                            <option value="PASSPORT">Passaporte</option>
-                                            <option value="DIRE">DIRE</option>
-                                        </select>
-                                    </FormRow>
-                                </div>
+                            <div className="col-span-3">
+                                <FormInput label="Data Nascimento" type="date" required value={formData.birthDate} onChange={v => handleChange('birthDate', v)} />
                             </div>
-
-                            <div className="flex gap-4 items-start">
-                                <div className="w-1/2">
-                                     <FormRow label="Número do Documento" required>
-                                        <input 
-                                            type="text" 
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
-                                            value={formData.documentNumber}
-                                            onChange={(e) => handleChange('documentNumber', e.target.value)}
-                                        />
-                                        <p className="text-[10px] text-slate-400 mt-1">Documento provisório sujeito a validação.</p>
-                                    </FormRow>
-                                </div>
-                                <div className="w-1/2">
-                                     <FormRow label="Nacionalidade">
-                                        <select 
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
-                                            value={formData.nationality}
-                                            onChange={(e) => handleChange('nationality', e.target.value)}
-                                        >
-                                            <option>Selecione</option>
-                                            <option value="Moçambicana">Moçambicana</option>
-                                            <option value="Estrangeira">Estrangeira</option>
-                                        </select>
-                                    </FormRow>
-                                </div>
+                            <div className="col-span-3">
+                                 <FormSelect label="Tipo Documento" required value={formData.documentType} onChange={v => handleChange('documentType', v)}>
+                                    <option>Selecione</option><option value="BI">BI</option><option value="PASSPORT">Passaporte</option>
+                                 </FormSelect>
+                            </div>
+                            <div className="col-span-3">
+                                <FormInput label="Nr. Documento" required value={formData.documentNumber} onChange={v => handleChange('documentNumber', v)} placeholder="Provisório..." />
+                            </div>
+                            <div className="col-span-3">
+                                <FormSelect label="Nacionalidade" value={formData.nationality} onChange={v => handleChange('nationality', v)}>
+                                    <option>Selecione</option><option value="Moçambicana">Moçambicana</option>
+                                </FormSelect>
                             </div>
                         </div>
-                    </section>
+                    </div>
                     
-                    <hr className="border-slate-100" />
-
-                    {/* Dados Pessoais */}
-                    <section>
-                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Dados Pessoais</h3>
-                        <div className="space-y-4">
-                            <FormRow label="Sexo" required>
-                                <div className="flex gap-6 py-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="gender" 
-                                            value="Masculino" 
-                                            checked={formData.gender === 'Masculino'}
-                                            onChange={(e) => handleChange('gender', e.target.value)}
-                                            className="text-[#137FEC] focus:ring-[#137FEC]"
-                                        />
-                                        <span className="text-sm text-slate-700">Masculino</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="gender" 
-                                            value="Feminino" 
-                                            checked={formData.gender === 'Feminino'}
-                                            onChange={(e) => handleChange('gender', e.target.value)}
-                                            className="text-[#137FEC] focus:ring-[#137FEC]"
-                                        />
-                                        <span className="text-sm text-slate-700">Feminino</span>
-                                    </label>
-                                </div>
-                            </FormRow>
-
-                            <FormRow label="Local de Nascimento">
-                                <input 
-                                    type="text" 
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
-                                    value={formData.birthPlace}
-                                    onChange={(e) => handleChange('birthPlace', e.target.value)}
-                                />
-                            </FormRow>
-
-                            <div className="w-1/2">
-                                <FormRow label="Telefone do Aluno (Opcional)">
-                                    <div className="flex">
-                                        <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">
-                                            +258
-                                        </span>
-                                        <input 
-                                            type="text" 
-                                            className="w-full border border-slate-300 rounded-r px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
-                                            value={formData.phone}
-                                            onChange={(e) => handleChange('phone', e.target.value)}
-                                        />
-                                    </div>
-                                </FormRow>
-                            </div>
-                        </div>
-                    </section>
-
-                     <hr className="border-slate-100" />
-
-                    {/* Endereço */}
-                    <section>
-                        <h3 className="text-[#137FEC] font-bold mb-4 text-sm">Endereço de Residência</h3>
-                        <div className="space-y-4">
-                            <FormRow label="Morada" required>
-                                <input 
-                                    type="text" 
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]"
-                                    placeholder="ex: Bairro, Localidade"
-                                    value={formData.address}
-                                    onChange={(e) => handleChange('address', e.target.value)}
-                                />
-                            </FormRow>
-
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
-                                    <FormRow label="Distrito">
-                                         <select 
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
-                                            value={formData.district}
-                                            onChange={(e) => handleChange('district', e.target.value)}
-                                        >
-                                            <option>Selecione</option>
-                                            <option value="Maputo">Maputo</option>
-                                            <option value="Matola">Matola</option>
-                                        </select>
-                                    </FormRow>
-                                </div>
-                                <div className="w-1/2">
-                                    <FormRow label="Província">
-                                         <select 
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white"
-                                            value={formData.province}
-                                            onChange={(e) => handleChange('province', e.target.value)}
-                                        >
-                                            <option>Selecione</option>
-                                            <option value="Maputo Cidade">Maputo Cidade</option>
-                                            <option value="Maputo Província">Maputo Província</option>
-                                        </select>
-                                    </FormRow>
+                    {/* Pessoais */}
+                    <div>
+                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados Pessoais</h3>
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                            <div className="col-span-4">
+                                <span className="block text-[10px] font-bold text-slate-700 mb-1">Sexo <span className="text-red-500">*</span></span>
+                                <div className="flex gap-3 h-[34px] items-center">
+                                    <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="gender" value="Masculino" checked={formData.gender === 'Masculino'} onChange={e => handleChange('gender', e.target.value)} className="accent-[#137FEC]" /><span className="text-xs text-slate-700">Masculino</span></label>
+                                    <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="gender" value="Feminino" checked={formData.gender === 'Feminino'} onChange={e => handleChange('gender', e.target.value)} className="accent-[#137FEC]" /><span className="text-xs text-slate-700">Feminino</span></label>
                                 </div>
                             </div>
+                            <div className="col-span-5">
+                                <FormInput label="Local de Nascimento" value={formData.birthPlace} onChange={v => handleChange('birthPlace', v)} />
+                            </div>
+                            <div className="col-span-3">
+                                <FormInput label="Telefone" value={formData.phone} onChange={v => handleChange('phone', v)} placeholder="+258..." />
+                            </div>
                         </div>
-                    </section>
+                    </div>
+
+                     {/* Endereço */}
+                    <div>
+                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Endereço de Residência</h3>
+                         <div className="grid grid-cols-12 gap-3">
+                            <div className="col-span-6">
+                                <FormInput label="Morada" required value={formData.address} onChange={v => handleChange('address', v)} placeholder="Bairro, Rua, Casa..." />
+                            </div>
+                            <div className="col-span-3">
+                                <FormSelect label="Distrito" value={formData.district} onChange={v => handleChange('district', v)}>
+                                    <option>Selecione</option><option value="Maputo">Maputo</option><option value="Matola">Matola</option>
+                                </FormSelect>
+                            </div>
+                            <div className="col-span-3">
+                                <FormSelect label="Província" value={formData.province} onChange={v => handleChange('province', v)}>
+                                    <option>Selecione</option><option value="Maputo Cidade">Maputo Cidade</option><option value="Maputo Província">Maputo Província</option>
+                                </FormSelect>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Buttons Row - moved inside to save space or kept at bottom */}
+                    <div className="flex justify-end gap-3 mt-auto pt-4 border-t border-slate-100">
+                        <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
+                        <button onClick={() => { if(activeTab === 'Dados do Aluno') setActiveTab(tabs[1]); else handleSubmit(); }} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
+                    </div>
+                </div>
+            </div>
+        ) : (
+            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg h-full flex items-center justify-center flex-col text-slate-400">
+                <span className="material-icons-outlined text-4xl mb-2">construction</span>
+                <p className="text-sm">Seção em desenvolvimento</p>
+                <div className="flex justify-end gap-3 w-full px-6 mt-8">
+                     <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
                 </div>
             </div>
         )}
-        
-        {activeTab !== 'Dados do Aluno' && (
-            <div className="flex items-center justify-center h-full text-slate-400 flex-col gap-4">
-                <span className="material-icons-outlined text-6xl">engineering</span>
-                <p>Módulo em desenvolvimento...</p>
-            </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
-        <button 
-           onClick={onCancel}
-           className="px-6 py-2 rounded text-slate-600 font-medium border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
-        >
-            Cancelar
-        </button>
-        <button 
-           onClick={() => {
-                // If on last tab, submit, else next tab
-                const currentIndex = tabs.indexOf(activeTab);
-                if (currentIndex < tabs.length - 1) {
-                    setActiveTab(tabs[currentIndex + 1]);
-                } else {
-                    handleSubmit();
-                }
-           }}
-           className="px-6 py-2 rounded text-white font-medium bg-[#00984A] hover:bg-[#00984A]/90 transition-colors flex items-center gap-2"
-        >
-            Próximo
-             <span className="material-icons-outlined text-sm">chevron_right</span>
-        </button>
       </div>
     </div>
   );
 };
 
-// Helper Component for Form Layout logic
-const FormRow: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
-    <div className="grid grid-cols-[160px_1fr] items-center gap-4">
-        <label className="text-sm font-bold text-slate-700 text-right">
-            {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <div>
-            {children}
-        </div>
+// Compact Form Components
+const FormInput = ({ label, required, value, onChange, type = "text", placeholder }: any) => (
+    <div>
+        <label className="block text-[10px] font-bold text-slate-700 mb-1 uppercase">{label} {required && <span className="text-red-500">*</span>}</label>
+        <input type={type} className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC]" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+    </div>
+);
+const FormSelect = ({ label, required, value, onChange, children }: any) => (
+    <div>
+         <label className="block text-[10px] font-bold text-slate-700 mb-1 uppercase">{label} {required && <span className="text-red-500">*</span>}</label>
+         <select className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#137FEC] focus:ring-1 focus:ring-[#137FEC] bg-white" value={value} onChange={e => onChange(e.target.value)}>{children}</select>
     </div>
 );
 

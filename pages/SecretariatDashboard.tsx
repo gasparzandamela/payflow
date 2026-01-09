@@ -179,17 +179,8 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
             Novo Aluno
           </button>
 
-          <button 
-            onClick={() => setActiveTab('services')}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-              activeTab === 'services' 
-                ? 'bg-[#137FEC]/10 text-[#137FEC]' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <span className="material-icons-outlined">support_agent</span>
-            Atendimento
-          </button>
+
+        
         </nav>
         
         <div className="p-4 border-t border-slate-100">
@@ -201,20 +192,13 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
               <span>Encerrar Sessão</span>
             </button>
 
-            <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 pt-4">
-                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium text-xs">
-                    {user.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{user.name}</p>
-                    <p className="text-xs text-slate-500 truncate capitalize">{user.role}</p>
-                </div>
-            </div>
+
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
+        {activeTab !== 'registration' && (
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 z-10">
             <h2 className="text-xl font-bold text-slate-800 capitalize">
                 {activeTab === 'students' ? 'Gestão de Estudantes' : 
@@ -231,6 +215,7 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
                 </button>
             )}
         </header>
+        )}
 
         <div className="p-8">
             {activeTab === 'registration' && (
