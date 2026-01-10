@@ -23,6 +23,10 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewAll, setViewAll] = useState(false);
+  
+  const [activeStudentsCount, setActiveStudentsCount] = useState(0);
+  const [newEnrollmentsToday, setNewEnrollmentsToday] = useState(0);
 
   // Financial View State
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -36,9 +40,9 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
 
   const fetchStudents = async () => {
     setLoading(true);
-    // Fetch profiles - ensuring we get the name correctly.
-    // If the 'name' column is empty or ID-like, we try to use raw_user_meta_data if accessible or just rely on 'full_name' if the column exists.
-    // Ideally the 'profiles' view/table has 'full_name' or 'name'.
+    
+    // We fetch everything to do client-side stats/filtering for now (assuming reasonable dataset size < 1000 for demo)
+    // In production, we would use count queries.
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -50,17 +54,44 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
         addToast('Erro ao carregar lista de estudantes.', 'error');
     }
     else {
-        // Fix for name display: check if name is email-like or id-like, if so, look for other fields or format
-        const cleanData = (data || []).map((s: any) => ({
-            ...s,
-            // Fallback strategy for name: full_name -> first+last -> name -> email
-            name: s.full_name || (s.first_name ? `${s.first_name} ${s.last_name || ''}` : s.name),
-            // Ensure status has a default
-            status: s.status || 'Activo',
-            // Mock grade if missing (for demo)
-            grade: s.grade || (Math.floor(Math.random() * 5) + 8) + 'ª Classe'
-        }));
+        const rawData = data || [];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Process data
+        const cleanData = rawData.map((s: any) => {
+             // Name Resolution:
+             // 1. Try 'full_name' from column
+             // 2. Try 'full_name' from raw_user_meta_data (JSONB)
+             // 3. Try 'first_name' + 'last_name' from raw_user_meta_data
+             // 4. Try 'name' column (fallback)
+             
+             let displayName = s.full_name;
+             const meta = s.raw_user_meta_data || {};
+             
+             if (!displayName && meta.full_name) displayName = meta.full_name;
+             if (!displayName && meta.first_name) displayName = `${meta.first_name} ${meta.last_name || ''}`.trim();
+             if (!displayName) displayName = s.name; // Fallback to whatever is in name
+
+             return {
+                ...s,
+                name: displayName || 'Sem Nome',
+                status: s.status || 'Activo', // Default to Active
+                grade: s.grade || meta.grade || '10ª Classe', // Try to find grade in meta too
+                photo_url: s.photo_url || meta.photo_url
+             };
+        });
+
         setStudents(cleanData);
+
+        // Calculate Stats
+        const active = cleanData.filter((s: any) => s.status === 'Activo' || s.status === 'active').length;
+        const newToday = cleanData.filter((s: any) => {
+            if (!s.created_at) return false;
+            return s.created_at.startsWith(todayStr);
+        }).length;
+
+        setActiveStudentsCount(active);
+        setNewEnrollmentsToday(newToday);
     }
     setLoading(false);
   };
@@ -69,6 +100,8 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
       s.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       s.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const displayedStudents = viewAll ? filteredStudents : filteredStudents.slice(0, 8);
 
   const loadStudentFinancials = async (studentId: string) => {
     const { data, error } = await supabase
@@ -183,15 +216,15 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
                 <StudentRegistrationForm onSuccess={() => { setActiveTab('students'); fetchStudents(); }} onCancel={() => setActiveTab('students')} />
             ) : activeTab === 'students' ? (
                 <div className="animate-in fade-in duration-500">
-                    <DashboardStats />
+                    <DashboardStats activeStudents={activeStudentsCount} newEnrollments={newEnrollmentsToday} />
                     
                     <div className="flex gap-8 items-start">
-                        {/* Left Column: Student List */}
-                        <div className="flex-[2] flex flex-col gap-6">
+                        {/* Only one column now as user removed sidebar */}
+                        <div className="w-full flex flex-col gap-6">
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
                                 <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                                     <h3 className="font-bold text-slate-800 text-lg">Gestão de Estudantes</h3>
-                                    <button onClick={() => setActiveTab('registration')} className="text-[#137FEC] text-xs font-bold bg-[#E3F2FD] px-3 py-1.5 rounded hover:bg-[#BBDEFB] transition-colors">+ Novo Aluno</button>
+                                    {/* Removed + Novo Aluno button as requested */}
                                 </div>
                                 
                                 <div className="p-4">
@@ -219,9 +252,9 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
                                         <tbody className="divide-y divide-slate-50">
                                             {loading ? (
                                                 <tr><td colSpan={4} className="p-8 text-center text-slate-400">Carregando estudantes...</td></tr>
-                                            ) : filteredStudents.length === 0 ? (
+                                            ) : displayedStudents.length === 0 ? (
                                                 <tr><td colSpan={4} className="p-8 text-center text-slate-400">Nenhum resultado encontrado.</td></tr>
-                                            ) : filteredStudents.slice(0, 8).map(student => (
+                                            ) : displayedStudents.map(student => (
                                                 <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center gap-3">
@@ -235,19 +268,18 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
                                                             </div>
                                                             <div>
                                                                 <div className="font-semibold text-slate-800 text-sm">{student.name}</div>
-                                                                {/* <div className="text-[10px] text-slate-400">{student.id?.split('-')[0]}...</div> */}
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3.5 text-slate-500">{student.grade || '10ª Classe'}</td>
                                                     <td className="px-4 py-3.5">
                                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                            student.status === 'Activo' ? 'bg-[#E8F5E9] text-[#00984A]' : 
+                                                            student.status === 'Activo' || student.status === 'active' ? 'bg-[#E8F5E9] text-[#00984A]' : 
                                                             student.status === 'Pendente' ? 'bg-[#FFF8E1] text-[#F57F17]' :
                                                             'bg-red-50 text-red-500'
                                                         }`}>
                                                             {student.status === 'Pendente' && <span className="material-icons-outlined text-[10px] mr-1">warning</span>}
-                                                            {student.status}
+                                                            {student.status === 'active' ? 'Activo' : student.status}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3.5 text-right">
@@ -262,71 +294,22 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
                                             ))}
                                         </tbody>
                                     </table>
-                                    <div className="p-4 text-center border-t border-slate-50">
-                                        <button className="text-[#137FEC] text-sm font-bold hover:underline flex items-center justify-center gap-1 mx-auto">
-                                            Ver Todos <span className="material-icons-outlined text-sm">arrow_forward</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column: Alerts & Chart */}
-                        <div className="flex-1 flex flex-col gap-6 w-full max-w-sm">
-                             {/* Alerts Section */}
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="font-bold text-slate-800 text-lg">Alertas / Pendências</h3>
-                                    <div className="p-1 bg-slate-50 border border-slate-200 rounded text-xs text-slate-500 flex items-center gap-1 px-2 cursor-pointer">
-                                        <span className="material-icons-outlined text-sm">filter_list</span> Filtro
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-5">
-                                    <div className="flex gap-3 items-start">
-                                        <div className="w-8 h-8 rounded bg-[#FFF8E1] text-[#F57F17] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <span className="material-icons-outlined text-lg">warning</span>
-                                        </div>
-                                        <div className="text-sm text-slate-600">
-                                            <span className="font-bold text-slate-800">Maria João Gomes</span> precisa completar a documentação.
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3 items-start">
-                                        <div className="w-8 h-8 rounded bg-[#FFEBEE] text-[#D32F2F] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <span className="material-icons-outlined text-lg">error_outline</span>
-                                        </div>
-                                        <div className="text-sm text-slate-600">
-                                            <span className="font-bold text-slate-800">Cartões</span> de Estudante aguardam emissão.
-                                        </div>
-                                    </div>
                                     
-                                    <div className="flex gap-3 items-start">
-                                        <div className="w-8 h-8 rounded bg-[#FFF8E1] text-[#F57F17] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <span className="material-icons-outlined text-lg">warning</span>
+                                    {!viewAll && filteredStudents.length > 8 && (
+                                        <div className="p-4 text-center border-t border-slate-50">
+                                            <button 
+                                                onClick={() => setViewAll(true)}
+                                                className="text-[#137FEC] text-sm font-bold hover:underline flex items-center justify-center gap-1 mx-auto"
+                                            >
+                                                Ver Todos <span className="material-icons-outlined text-sm">arrow_forward</span>
+                                            </button>
                                         </div>
-                                        <div className="text-sm text-slate-600">
-                                            <span className="font-bold text-slate-800">8 matrículas</span> pendentes de validação.
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3 items-start">
-                                        <div className="w-8 h-8 rounded bg-[#E3F2FD] text-[#137FEC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <span className="material-icons-outlined text-lg">mail</span>
-                                        </div>
-                                        <div className="text-sm text-slate-600">
-                                            <span className="font-bold text-slate-800">3 mensagens</span> não lidas dos pais.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 pt-4 border-t border-slate-50 text-right">
-                                    <button className="text-[#137FEC] text-xs font-bold hover:underline">Ver Todos (12) &rarr;</button>
+                                    )}
                                 </div>
                             </div>
-                            
-                            {/* Enrollment Chart */}
-                            <EnrollmentChart />
                         </div>
+
+                        {/* Right Sidebar Removed as per request (Alerts / Pendências) */}
                     </div>
                 </div>
             ) : (
@@ -335,7 +318,7 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
         </div>
       </div>
 
-     {/* Student Detail Modal/Panel - Using the existing logic but maybe refactored later if requested. Keeping it simple for now (Modal-like) */}
+     {/* Student Detail Modal/Panel */}
      {selectedStudent && (
          <Modal 
             isOpen={!!selectedStudent} 
@@ -344,6 +327,7 @@ const DashboardContent: React.FC<{ user: User }> = ({ user }) => {
             description={selectedStudent.email || 'Detalhes do Estudante'}
             icon="school"
          >
+             {/* ... Same Modal Content ... */}
              <div className="space-y-4">
                  <div className="flex gap-2">
                      <button onClick={() => handleEnrollment('enrollment')} className="flex-1 bg-[#137FEC] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#1565C0]">Nova Matrícula</button>
