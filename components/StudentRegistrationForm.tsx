@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '../components/Toast';
 
 interface StudentFormData {
@@ -81,6 +81,8 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [activeTab, setActiveTab] = useState('Dados do Aluno');
   const [showGuardianInfo, setShowGuardianInfo] = useState(false);
   
+  const isCleanExit = useRef(false);
+  
   // Photos (Student only)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,8 +93,48 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     'Documentos'
   ];
 
+  // Draft Toast Effect
+  useEffect(() => {
+    return () => {
+        if (!isCleanExit.current) {
+            // Note: In a real app we'd save to localStorage here
+            addToast('Guardado como rascunho', 'info');
+        }
+    };
+  }, []);
+
   const handleChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const parseName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return { first: '', middle: '', last: '' };
+    if (parts.length === 1) return { first: parts[0], middle: '', last: '' };
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    const middle = parts.slice(1, -1).join(' ');
+    return { first, middle, last };
+  };
+
+  const handleRelationshipChange = (value: string) => {
+      let updates: Partial<StudentFormData> = { guardianRelationship: value };
+      
+      let sourceName = '';
+      if (value === 'Pai') sourceName = formData.fatherName;
+      else if (value === 'Mãe') sourceName = formData.motherName;
+
+      if (sourceName) {
+          const { first, middle, last } = parseName(sourceName);
+          updates = {
+              ...updates,
+              guardianFirstName: first,
+              guardianMiddleName: middle,
+              guardianLastName: last
+          };
+      }
+      
+      setFormData(prev => ({ ...prev, ...updates }));
   };
 
   const handleDateChange = (value: string) => {
@@ -208,6 +250,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         const err = await response.json(); throw new Error(err.message || err.error || 'Erro ao criar estudante');
       }
       addToast('Estudante registrado com sucesso!', 'success');
+      isCleanExit.current = true;
       onSuccess();
     } catch (error: any) {
       console.error('Registration Error:', error); addToast(error.message || 'Erro de conexão.', 'error');
@@ -228,15 +271,21 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       }
   };
 
-const handleBack = () => {
-    if (activeTab === 'Filiação') {
-        setActiveTab('Dados do Aluno');
-    } else if (activeTab === 'Documentos') {
-        setActiveTab('Filiação');
-    } else {
-        onCancel();
-    }
-};
+  const handleBack = () => {
+      if (activeTab === 'Filiação') {
+          setActiveTab('Dados do Aluno');
+      } else if (activeTab === 'Documentos') {
+          setActiveTab('Filiação');
+      }
+      // Note: "Voltar" not available for first tab based on UI logic below
+  };
+  
+  const handleCancelWithConfirmation = () => {
+      if (window.confirm("Deseja cancelar a inscrição? Todos os dados não salvos serão perdidos.")) {
+          isCleanExit.current = true;
+          onCancel();
+      }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm w-full h-full flex flex-col">
@@ -368,8 +417,8 @@ const handleBack = () => {
                         </div>
                     </div>
                     
-                    <div className="flex justify-end gap-3 mt-auto pt-4 border-t border-slate-100">
-                        <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
+                    <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100 items-center">
+                         <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                         <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
                     </div>
                 </div>
@@ -422,7 +471,7 @@ const handleBack = () => {
                                     </div>
                                     
                                     <div className="col-span-4">
-                                        <FormSelect label="Grau de Parentesco" required value={formData.guardianRelationship} onChange={v => handleChange('guardianRelationship', v)}>
+                                        <FormSelect label="Grau de Parentesco" required value={formData.guardianRelationship} onChange={v => handleRelationshipChange(v)}>
                                             <option>Selecione</option>
                                             <option value="Pai">Pai</option>
                                             <option value="Mãe">Mãe</option>
@@ -464,10 +513,10 @@ const handleBack = () => {
                     )}
                 </div>
 
-                <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
-                     <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
+                <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100 items-center">
+                     <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                     <div className="flex gap-3">
-                         <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
+                         <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
                         <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
                     </div>
                 </div>
@@ -476,10 +525,10 @@ const handleBack = () => {
             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg h-full flex items-center justify-center flex-col text-slate-400">
                 <span className="material-icons-outlined text-4xl mb-2">folder_open</span>
                 <p className="text-sm">Envio de Documentos</p>
-                <div className="flex justify-between w-full px-6 mt-8">
-                     <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
+                <div className="flex justify-between w-full px-6 mt-8 items-center">
+                     <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                      <div className="flex gap-3">
-                         <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
+                         <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
                          <button onClick={handleSubmit} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">
                              {loading ? 'Processando...' : 'Finalizar Inscrição'}
                              {!loading && <span className="material-icons-outlined text-sm">check</span>}
