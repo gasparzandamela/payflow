@@ -20,9 +20,12 @@ async function handler(request: Request) {
   // We should ideally check the Authorization header.
   
   // Checking payload
-  const { name, email, password } = await request.json();
+  const { name, email, password, user_metadata } = await request.json();
 
-  if (!name || !email || !password) {
+  // If name is not provided directly, try to get it from metadata (frontend sends it in user_metadata)
+  const studentName = name || user_metadata?.full_name || user_metadata?.first_name;
+
+  if (!email || !password || !studentName) {
       return new Response(JSON.stringify({ error: 'Missing Required Fields' }), { status: 400 });
   }
 
@@ -43,6 +46,9 @@ async function handler(request: Request) {
   
   const signupUrl = `${supabaseUrl}/auth/v1/signup`;
   
+  // Use metadata from frontend if available, otherwise construct it
+  const metadata = user_metadata || { name: studentName };
+
   const signupResponse = await fetch(signupUrl, {
     method: 'POST',
     headers: {
@@ -52,7 +58,7 @@ async function handler(request: Request) {
     body: JSON.stringify({ 
         email, 
         password, 
-        data: { name: name } // This metadata is used by the trigger to set the name
+        data: metadata // Pass the full metadata
     }),
   });
 
