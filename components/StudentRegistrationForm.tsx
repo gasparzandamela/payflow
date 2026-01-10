@@ -17,8 +17,14 @@ interface StudentFormData {
   address: string;
   province: string;
   
-  // Encarregado de Educação (Tab 2)
-  guardianName: string;
+  // Filiação (Tab 2)
+  fatherName: string;
+  motherName: string;
+
+  // Encarregado (Optional/Hidden in Tab 2)
+  guardianFirstName: string;
+  guardianMiddleName: string;
+  guardianLastName: string;
   guardianRelationship: string;
   guardianDocumentType: string;
   guardianDocumentNumber: string;
@@ -26,12 +32,9 @@ interface StudentFormData {
   guardianPhone: string;
   guardianEmail: string;
   guardianAddress: string;
-  guardianDistrict: string;
 
-  // Other Tabs
-  email: string; // Student email
-  fatherName: string;
-  motherName: string;
+  // other
+  email: string; 
 }
 
 const initialData: StudentFormData = {
@@ -49,19 +52,21 @@ const initialData: StudentFormData = {
   address: '',
   province: 'Selecione',
   
-  guardianName: '',
+  fatherName: '',
+  motherName: '',
+
+  guardianFirstName: '',
+  guardianMiddleName: '',
+  guardianLastName: '',
   guardianRelationship: 'Selecione',
   guardianDocumentType: 'Selecione',
   guardianDocumentNumber: '',
-  guardianNationality: 'Selecione',
+  guardianNationality: 'Moçambicana',
   guardianPhone: '',
   guardianEmail: '',
   guardianAddress: '',
-  guardianDistrict: 'Selecione',
 
   email: '',
-  fatherName: '',
-  motherName: ''
 };
 
 interface Props {
@@ -74,17 +79,15 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState<StudentFormData>(initialData);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Dados do Aluno');
+  const [showGuardianInfo, setShowGuardianInfo] = useState(false);
   
-  // Photos
+  // Photos (Student only)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [guardianPhotoPreview, setGuardianPhotoPreview] = useState<string | null>(null);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const guardianFileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
     'Dados do Aluno',
-    'Encarregado de Educação',
+    'Filiação',
     'Documentos'
   ];
 
@@ -105,7 +108,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     handleChange('birthDate', formatted);
   };
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>, isGuardian: boolean = false) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         if (file.size > 2 * 1024 * 1024) {
@@ -120,11 +123,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             if (ev.target?.result) {
-                if (isGuardian) {
-                    setGuardianPhotoPreview(ev.target.result as string);
-                } else {
-                    setPhotoPreview(ev.target.result as string);
-                }
+                setPhotoPreview(ev.target.result as string);
             }
         };
         reader.readAsDataURL(file);
@@ -140,12 +139,20 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         if (!formData.documentNumber) { addToast('Por favor, insira o Número do Documento.', 'error'); return false; }
         if (formData.nationality === 'Selecione') { addToast('Por favor, selecione a Nacionalidade.', 'error'); return false; }
         if (!formData.address) { addToast('Por favor, insira a Morada.', 'error'); return false; }
-    } else if (activeTab === 'Encarregado de Educação') {
-        if (!formData.guardianName) { addToast('Por favor, insira o Nome do Encarregado.', 'error'); return false; }
-        if (formData.guardianRelationship === 'Selecione') { addToast('Por favor, selecione o Grau de Parentesco.', 'error'); return false; }
-        if (formData.guardianDocumentType === 'Selecione') { addToast('Por favor, selecione o Tipo de Documento do Encarregado.', 'error'); return false; }
-        if (!formData.guardianPhone) { addToast('Por favor, insira o Telefone do Encarregado.', 'error'); return false; }
-        if (!formData.guardianAddress) { addToast('Por favor, insira a Morada do Encarregado.', 'error'); return false; }
+    } else if (activeTab === 'Filiação') {
+         // Require comments/parents? Assuming yes.
+         if (!formData.fatherName && !formData.motherName) {
+             addToast('Por favor, insira pelo menos um dos nomes (Pai ou Mãe).', 'error'); 
+             return false; 
+         }
+         
+         // Validate Guardian ONLY if shown
+         if (showGuardianInfo) {
+             if (!formData.guardianFirstName) { addToast('Por favor, insira o Nome do Encarregado.', 'error'); return false; }
+             if (!formData.guardianLastName) { addToast('Por favor, insira o Apelido do Encarregado.', 'error'); return false; }
+             if (formData.guardianRelationship === 'Selecione') { addToast('Por favor, selecione o Grau de Parentesco.', 'error'); return false; }
+             if (!formData.guardianPhone) { addToast('Por favor, insira o Telefone do Encarregado.', 'error'); return false; }
+         }
     }
     return true;
   };
@@ -156,7 +163,10 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     try {
       // Reconstruct full name and formatted date for backend
       const fullName = `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`;
-      
+      const guardianFullName = showGuardianInfo 
+         ? `${formData.guardianFirstName} ${formData.guardianMiddleName ? formData.guardianMiddleName + ' ' : ''}${formData.guardianLastName}`
+         : '';
+
       // Convert DD/MM/YYYY to YYYY-MM-DD for backend/DB if needed, or keep as string
       const [day, month, year] = formData.birthDate.split('/');
       const isoDate = `${year}-${month}-${day}`;
@@ -165,6 +175,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         email: formData.email || `student.${Date.now()}@payflow.com`,
         password: 'temporary-pass',
         user_metadata: {
+            // Student
             first_name: formData.firstName, middle_name: formData.middleName, last_name: formData.lastName,
             full_name: fullName, document_type: formData.documentType,
             document_number: formData.documentNumber, phone_number: formData.phone,
@@ -174,16 +185,18 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
             birth_date: isoDate, role: 'student',
             photo_url: photoPreview,
             
-            // Guardian Data
-            guardian_name: formData.guardianName,
-            guardian_relationship: formData.guardianRelationship,
-            guardian_contact: formData.guardianPhone,
-            guardian_email: formData.guardianEmail,
-            guardian_document_type: formData.guardianDocumentType,
-            guardian_document_number: formData.guardianDocumentNumber,
-            guardian_address: formData.guardianAddress,
-            guardian_district: formData.guardianDistrict,
-            guardian_photo_url: guardianPhotoPreview
+            // Parents
+            father_name: formData.fatherName, mother_name: formData.motherName,
+
+            // Guardian Data (only if filled/shown)
+            guardian_name: guardianFullName,
+            guardian_relationship: showGuardianInfo ? formData.guardianRelationship : null,
+            guardian_contact: showGuardianInfo ? formData.guardianPhone : null,
+            guardian_email: showGuardianInfo ? formData.guardianEmail : null,
+            guardian_document_type: showGuardianInfo ? formData.guardianDocumentType : null,
+            guardian_document_number: showGuardianInfo ? formData.guardianDocumentNumber : null,
+            guardian_address: showGuardianInfo ? formData.guardianAddress : null,
+            guardian_nationality: showGuardianInfo ? formData.guardianNationality : null
         }
       };
       
@@ -207,8 +220,8 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       if (!validate()) return;
       
       if (activeTab === 'Dados do Aluno') {
-          setActiveTab('Encarregado de Educação');
-      } else if (activeTab === 'Encarregado de Educação') {
+          setActiveTab('Filiação');
+      } else if (activeTab === 'Filiação') {
           setActiveTab('Documentos');
       } else {
           handleSubmit();
@@ -216,10 +229,10 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   };
 
 const handleBack = () => {
-    if (activeTab === 'Encarregado de Educação') {
+    if (activeTab === 'Filiação') {
         setActiveTab('Dados do Aluno');
     } else if (activeTab === 'Documentos') {
-        setActiveTab('Encarregado de Educação');
+        setActiveTab('Filiação');
     } else {
         onCancel();
     }
@@ -265,7 +278,7 @@ const handleBack = () => {
                         <input 
                             type="file" 
                             ref={fileInputRef} 
-                            onChange={(e) => handlePhotoSelect(e, false)} 
+                            onChange={handlePhotoSelect} 
                             accept="image/*" 
                             className="hidden" 
                         />
@@ -361,116 +374,101 @@ const handleBack = () => {
                     </div>
                 </div>
             </div>
-        ) : activeTab === 'Encarregado de Educação' ? (
-             <div className="flex gap-6 h-full">
-                {/* Guardian Photo Upload Column */}
-                <div className="w-48 flex-shrink-0">
-                    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
-                        <div 
-                            className="w-full aspect-[3/4] bg-slate-200 rounded-md mb-3 flex items-center justify-center text-slate-400 overflow-hidden relative cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => guardianFileInputRef.current?.click()}
-                        >
-                             {guardianPhotoPreview ? (
-                                <img src={guardianPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                             ) : (
-                                <span className="material-icons-outlined text-6xl">person</span>
-                             )}
-                        </div>
-                        <input 
-                            type="file" 
-                            ref={guardianFileInputRef} 
-                            onChange={(e) => handlePhotoSelect(e, true)} 
-                            accept="image/*" 
-                            className="hidden" 
-                        />
+        ) : activeTab === 'Filiação' ? (
+             <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-1">
+                    
+                    {/* Filiação (Parents) */}
+                    <div className="mb-6">
+                         <h3 className="text-[#137FEC] font-bold mb-4 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados da Filiação</h3>
+                         <div className="grid grid-cols-2 gap-4">
+                             <FormInput label="Nome do Pai" value={formData.fatherName} onChange={v => handleChange('fatherName', v)} placeholder="Nome completo do pai" />
+                             <FormInput label="Nome da Mãe" value={formData.motherName} onChange={v => handleChange('motherName', v)} placeholder="Nome completo da mãe" />
+                         </div>
+                    </div>
+
+                    {/* Toggle Button for Guardian Info */}
+                    <div className="mb-4">
                         <button 
-                            onClick={() => guardianFileInputRef.current?.click()}
-                            className="w-full py-2 bg-white border border-slate-300 rounded text-xs font-bold text-slate-600 hover:bg-slate-50"
+                            onClick={() => setShowGuardianInfo(!showGuardianInfo)}
+                            className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded border transition-colors ${
+                                showGuardianInfo 
+                                    ? 'bg-[#137FEC]/10 text-[#137FEC] border-[#137FEC]/20' 
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
                         >
-                            Carregar Foto
+                            <span className="material-icons-outlined text-base">
+                                {showGuardianInfo ? 'expand_less' : 'add'}
+                            </span>
+                             Informações do Encarregado
                         </button>
                     </div>
+
+                    {/* Guardian Info Form (Collapsible) */}
+                    {showGuardianInfo && (
+                        <div className="animate-in slide-in-from-top-2 duration-300">
+                            {/* Informações do Encarregado */}
+                            <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-200 mb-6">
+                                <h3 className="text-slate-700 font-bold mb-3 text-xs uppercase tracking-wider">Dados do Encarregado</h3>
+                                <div className="grid grid-cols-12 gap-3 mb-4">
+                                    <div className="col-span-4">
+                                        <FormInput label="Nome" required value={formData.guardianFirstName} onChange={v => handleChange('guardianFirstName', v)} />
+                                    </div>
+                                    <div className="col-span-4">
+                                        <FormInput label="Outros Nomes" value={formData.guardianMiddleName} onChange={v => handleChange('guardianMiddleName', v)} />
+                                    </div>
+                                    <div className="col-span-4">
+                                        <FormInput label="Apelido" required value={formData.guardianLastName} onChange={v => handleChange('guardianLastName', v)} />
+                                    </div>
+                                    
+                                    <div className="col-span-4">
+                                        <FormSelect label="Grau de Parentesco" required value={formData.guardianRelationship} onChange={v => handleChange('guardianRelationship', v)}>
+                                            <option>Selecione</option>
+                                            <option value="Pai">Pai</option>
+                                            <option value="Mãe">Mãe</option>
+                                            <option value="Tio(a)">Tio(a)</option>
+                                            <option value="Avô(ó)">Avô(ó)</option>
+                                            <option value="Irmão(ã)">Irmão(ã)</option>
+                                            <option value="Outro">Outro</option>
+                                        </FormSelect>
+                                    </div>
+                                    <div className="col-span-4">
+                                        <FormSelect label="Tipo de Documento" required value={formData.guardianDocumentType} onChange={v => handleChange('guardianDocumentType', v)}>
+                                            <option>Selecione</option><option value="BI">BI</option><option value="PASSPORT">Passaporte</option><option value="DIRE">DIRE</option>
+                                        </FormSelect>
+                                    </div>
+                                     <div className="col-span-4">
+                                        <FormSelect label="Nacionalidade" value={formData.guardianNationality} onChange={v => handleChange('guardianNationality', v)}>
+                                            <option>Selecione</option><option value="Moçambicana">Moçambicana</option><option value="Estrangeira">Estrangeira</option>
+                                        </FormSelect>
+                                    </div>
+                                    <div className="col-span-12">
+                                        <FormInput label="Número do Documento" value={formData.guardianDocumentNumber} onChange={v => handleChange('guardianDocumentNumber', v)} />
+                                    </div>
+                                </div>
+
+                                <h3 className="text-slate-700 font-bold mb-3 text-xs uppercase tracking-wider">Contacto e Endereço</h3>
+                                <div className="grid grid-cols-12 gap-3">
+                                    <div className="col-span-6">
+                                        <FormInput label="Telefone de Contacto" required value={formData.guardianPhone} onChange={v => handleChange('guardianPhone', v)} placeholder="+258..." />
+                                    </div>
+                                    <div className="col-span-6">
+                                        <FormInput label="Email (Opcional)" value={formData.guardianEmail} onChange={v => handleChange('guardianEmail', v)} />
+                                    </div>
+                                    <div className="col-span-12">
+                                        <FormInput label="Morada" required value={formData.guardianAddress} onChange={v => handleChange('guardianAddress', v)} placeholder="Bairro" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Guardian Form Fields Column */}
-                <div className="flex-1 flex flex-col gap-4">
-                    {/* Informações do Encarregado */}
-                    <div>
-                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Informações do Encarregado</h3>
-                        <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-12">
-                                <FormInput label="Nome Completo" required value={formData.guardianName} onChange={v => handleChange('guardianName', v)} />
-                            </div>
-                            <div className="col-span-4">
-                                <FormSelect label="Grau de Parentesco" required value={formData.guardianRelationship} onChange={v => handleChange('guardianRelationship', v)}>
-                                    <option>Selecione</option>
-                                    <option value="Pai">Pai</option>
-                                    <option value="Mãe">Mãe</option>
-                                    <option value="Tio(a)">Tio(a)</option>
-                                    <option value="Avô(ó)">Avô(ó)</option>
-                                    <option value="Irmão(ã)">Irmão(ã)</option>
-                                    <option value="Outro">Outro</option>
-                                </FormSelect>
-                            </div>
-                            <div className="col-span-4">
-                                <FormSelect label="Tipo de Documento" required value={formData.guardianDocumentType} onChange={v => handleChange('guardianDocumentType', v)}>
-                                    <option>Selecione</option><option value="BI">BI</option><option value="PASSPORT">Passaporte</option><option value="DIRE">DIRE</option>
-                                </FormSelect>
-                            </div>
-                             <div className="col-span-4">
-                                <FormSelect label="Nacionalidade" value={formData.guardianNationality} onChange={v => handleChange('guardianNationality', v)}>
-                                    <option>Selecione</option><option value="Moçambicana">Moçambicana</option><option value="Estrangeira">Estrangeira</option>
-                                </FormSelect>
-                            </div>
-                            <div className="col-span-6">
-                                <FormInput label="Número do Documento" value={formData.guardianDocumentNumber} onChange={v => handleChange('guardianDocumentNumber', v)} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Contacto do Encarregado */}
-                    <div>
-                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Contacto do Encarregado</h3>
-                        <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-6">
-                                <FormInput label="Telefone de Contacto" required value={formData.guardianPhone} onChange={v => handleChange('guardianPhone', v)} placeholder="+258..." />
-                            </div>
-                            <div className="col-span-6">
-                                <FormInput label="Email (Opcional)" value={formData.guardianEmail} onChange={v => handleChange('guardianEmail', v)} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Endereço do Encarregado */}
-                    <div>
-                        <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Endereço do Encarregado (Opcional)</h3>
-                        <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-8">
-                                <FormInput label="Morada" required value={formData.guardianAddress} onChange={v => handleChange('guardianAddress', v)} placeholder="ex: Bairro, Localidade" />
-                            </div>
-                            <div className="col-span-4">
-                                <FormSelect label="Distrito" value={formData.guardianDistrict} onChange={v => handleChange('guardianDistrict', v)}>
-                                    <option>Selecione</option>
-                                    <option value="Kamavota">KaMavota</option>
-                                    <option value="KaMpfumu">KaMpfumu</option>
-                                    <option value="KaMaxaquene">KaMaxaquene</option>
-                                    <option value="KaMubukwana">KaMubukwana</option>
-                                    <option value="KaTembe">KaTembe</option>
-                                    <option value="KaNyaka">KaNyaka</option>
-                                    <option value="Matola">Matola</option>
-                                    <option value="Boane">Boane</option>
-                                    <option value="Outro">Outro</option>
-                                </FormSelect>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
-                         <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
-                        <div className="flex gap-3">
-                             <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
-                            <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
-                        </div>
+                <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100">
+                     <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
+                    <div className="flex gap-3">
+                         <button onClick={onCancel} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Cancelar</button>
+                        <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
                     </div>
                 </div>
             </div>
