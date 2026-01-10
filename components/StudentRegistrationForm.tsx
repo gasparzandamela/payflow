@@ -16,6 +16,7 @@ interface StudentFormData {
   phone: string;
   address: string;
   province: string;
+  grade: string; // Added for the confirmation screen
   
   // Filiação (Tab 2)
   fatherName: string;
@@ -51,6 +52,7 @@ const initialData: StudentFormData = {
   phone: '',
   address: '',
   province: 'Selecione',
+  grade: '10ª Classe', // Default
   
   fatherName: '',
   motherName: '',
@@ -81,6 +83,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [activeTab, setActiveTab] = useState('Dados do Aluno');
   const [showGuardianInfo, setShowGuardianInfo] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
   const isCleanExit = useRef(false);
   
@@ -91,7 +94,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const tabs = [
     'Dados do Aluno',
     'Filiação',
-    'Documentos'
+    'Confirmação'
   ];
 
   // Draft Toast Effect
@@ -134,7 +137,6 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
               guardianLastName: last
           };
       } else {
-          // If switching to something else, clear the fields
            updates = {
               ...updates,
               guardianFirstName: '',
@@ -209,7 +211,9 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   };
 
   const handleSubmit = async () => {
-    // If called from Documentos tab (final submission)
+    // Check validation first
+    if (!validate()) return;
+
     setLoading(true);
     try {
       // Reconstruct full name and formatted date for backend
@@ -235,6 +239,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
             gender: formData.gender === 'Masculino' ? 'M' : 'F',
             birth_date: isoDate, role: 'student',
             photo_url: photoPreview,
+            grade: formData.grade,
             
             // Parents
             father_name: formData.fatherName, mother_name: formData.motherName,
@@ -259,8 +264,11 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         const err = await response.json(); throw new Error(err.message || err.error || 'Erro ao criar estudante');
       }
       addToast('Estudante registrado com sucesso!', 'success');
-      isCleanExit.current = true;
-      onSuccess();
+      
+      // Move to success screen
+      setIsSuccess(true);
+      setActiveTab('Confirmação');
+
     } catch (error: any) {
       console.error('Registration Error:', error); addToast(error.message || 'Erro de conexão.', 'error');
     } finally {
@@ -273,8 +281,6 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       
       if (activeTab === 'Dados do Aluno') {
           setActiveTab('Filiação');
-      } else if (activeTab === 'Filiação') {
-          setActiveTab('Documentos');
       } else {
           handleSubmit();
       }
@@ -283,12 +289,16 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const handleBack = () => {
       if (activeTab === 'Filiação') {
           setActiveTab('Dados do Aluno');
-      } else if (activeTab === 'Documentos') {
-          setActiveTab('Filiação');
       }
   };
   
   const handleCancelClick = () => {
+      if (isSuccess) {
+          // If already success, just close
+          isCleanExit.current = true;
+          onSuccess();
+          return;
+      }
       setShowCancelModal(true);
   };
 
@@ -296,6 +306,20 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       setShowCancelModal(false);
       isCleanExit.current = true;
       onCancel();
+  };
+  
+  const resetForm = () => {
+      setFormData(initialData);
+      setPhotoPreview(null);
+      setShowGuardianInfo(false);
+      setIsSuccess(false);
+      setActiveTab('Dados do Aluno');
+      isCleanExit.current = false; // Reset exit state
+  };
+
+  const handleFinalize = () => {
+       isCleanExit.current = true;
+       onSuccess();
   };
 
   return (
@@ -331,15 +355,19 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
            </div>
        )}
 
+       {/* Tabs Header */}
        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
         {tabs.map((tab) => (
             <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                disabled={tab === 'Confirmação' && !isSuccess} // Disable confirmation tab unless success
+                onClick={() => {
+                    if (tab !== 'Confirmação' && !isSuccess) setActiveTab(tab); 
+                }}
                 className={`px-5 py-3 text-xs font-bold uppercase tracking-wide transition-colors relative ${
                     activeTab === tab 
                         ? 'text-white bg-[#137FEC]' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                        : isSuccess && tab === 'Confirmação' ? 'text-[#00984A]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
                 style={{
                     borderTopLeftRadius: '6px', borderTopRightRadius: '6px', marginBottom: '-1px'
@@ -353,7 +381,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       <div className="flex-1 p-6 overflow-hidden flex flex-col">
         {activeTab === 'Dados do Aluno' ? (
             <div className="flex gap-6 h-full">
-                {/* Photo Upload Column */}
+                {/* Photo Upload */}
                 <div className="w-48 flex-shrink-0">
                     <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
                         <div 
@@ -382,7 +410,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     </div>
                 </div>
 
-                {/* Form Fields Column */}
+                {/* Form Fields */}
                 <div className="flex-1 flex flex-col gap-4">
                     {/* Identificação */}
                     <div>
@@ -428,7 +456,16 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     <div>
                         <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados Pessoais</h3>
                         <div className="grid grid-cols-12 gap-3 items-end">
-                            <div className="col-span-4">
+                             <div className="col-span-4">
+                                <FormSelect label="Classe" required value={formData.grade} onChange={v => handleChange('grade', v)}>
+                                    <option>8ª Classe</option>
+                                    <option>9ª Classe</option>
+                                    <option>10ª Classe</option>
+                                    <option>11ª Classe</option>
+                                    <option>12ª Classe</option>
+                                </FormSelect>
+                            </div>
+                            <div className="col-span-3">
                                 <span className="block text-[10px] font-bold text-slate-700 mb-1">Sexo <span className="text-red-500">*</span></span>
                                 <div className="flex gap-3 h-[34px] items-center">
                                     <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="gender" value="Masculino" checked={formData.gender === 'Masculino'} onChange={e => handleChange('gender', e.target.value)} className="accent-[#137FEC]" /><span className="text-xs text-slate-700">Masculino</span></label>
@@ -438,9 +475,6 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                             <div className="col-span-5">
                                 <FormInput label="Local de Nascimento" value={formData.birthPlace} onChange={v => handleChange('birthPlace', v)} />
                             </div>
-                            <div className="col-span-3">
-                                <FormInput label="Telefone" value={formData.phone} onChange={v => handleChange('phone', v)} placeholder="+258..." />
-                            </div>
                         </div>
                     </div>
 
@@ -448,7 +482,10 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     <div>
                         <h3 className="text-[#137FEC] font-bold mb-2 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Endereço de Residência</h3>
                          <div className="grid grid-cols-12 gap-3">
-                            <div className="col-span-9">
+                             <div className="col-span-4">
+                                <FormInput label="Telefone" value={formData.phone} onChange={v => handleChange('phone', v)} placeholder="+258..." />
+                            </div>
+                            <div className="col-span-5">
                                 <FormInput label="Morada" required value={formData.address} onChange={v => handleChange('address', v)} placeholder="Bairro" />
                             </div>
                             <div className="col-span-3">
@@ -469,7 +506,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
              <div className="flex flex-col h-full overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-1">
                     
-                    {/* Filiação (Parents) */}
+                    {/* Filiação */}
                     <div className="mb-6">
                          <h3 className="text-[#137FEC] font-bold mb-4 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Dados da Filiação</h3>
                          <div className="grid grid-cols-2 gap-4">
@@ -559,22 +596,79 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                      <button onClick={handleCancelClick} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                     <div className="flex gap-3">
                          <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
-                        <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
+                         <button onClick={handleSubmit} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">
+                             {loading ? 'Submetendo...' : 'Submeter & Finalizar'}
+                             {!loading && <span className="material-icons-outlined text-sm">check</span>}
+                         </button>
                     </div>
                 </div>
             </div>
         ) : (
-            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg h-full flex items-center justify-center flex-col text-slate-400">
-                <span className="material-icons-outlined text-4xl mb-2">folder_open</span>
-                <p className="text-sm">Envio de Documentos</p>
-                <div className="flex justify-between w-full px-6 mt-8 items-center">
-                     <button onClick={handleCancelClick} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
-                     <div className="flex gap-3">
-                         <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
-                         <button onClick={handleSubmit} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">
-                             {loading ? 'Processando...' : 'Finalizar Inscrição'}
-                             {!loading && <span className="material-icons-outlined text-sm">check</span>}
-                         </button>
+            <div className="h-full flex items-center justify-center flex-col animate-in fade-in duration-500">
+                {/* Success Screen */}
+                <div className="flex flex-col items-center justify-center text-center max-w-2xl w-full">
+                    <div className="w-20 h-20 rounded-full border-4 border-[#00984A] flex items-center justify-center mb-6">
+                         <span className="material-icons-outlined text-[#00984A] text-5xl font-bold">check</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Matrícula Submetida com Sucesso!</h2>
+                    <p className="text-slate-500 text-sm mb-10">A inscrição do aluno foi concluída e submetida com sucesso.</p>
+
+                    <h3 className="text-[#137FEC] font-bold text-sm uppercase self-start mb-4">Resumo da Matrícula</h3>
+                    
+                    <div className="w-full border border-slate-200 rounded-lg overflow-hidden mb-10">
+                         {/* Student Summary */}
+                         <div className="flex items-center gap-4 p-4 border-b border-slate-100 bg-white">
+                             <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center text-slate-400">
+                                 <span className="material-icons-outlined text-2xl">person</span>
+                             </div>
+                             <div className="text-left">
+                                 <h4 className="text-[#137FEC] font-bold text-xs uppercase mb-1">Informações do Aluno</h4>
+                                 <div className="text-sm text-slate-600">
+                                     <span className="font-semibold text-slate-800">Nome do Aluno:</span> {formData.firstName} {formData.lastName}
+                                 </div>
+                                 <div className="text-sm text-slate-600">
+                                     <span className="font-semibold text-slate-800">Classe:</span> {formData.grade}
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         {/* Guardian Summary */}
+                         <div className="flex items-center gap-4 p-4 bg-slate-50/50">
+                             <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center text-slate-400">
+                                 <span className="material-icons-outlined text-2xl">person_outline</span>
+                             </div>
+                             <div className="text-left">
+                                 <h4 className="text-[#137FEC] font-bold text-xs uppercase mb-1">Encarregado de Educação</h4>
+                                 {showGuardianInfo || formData.fatherName || formData.motherName ? (
+                                      <>
+                                     <div className="text-sm text-slate-600">
+                                         <span className="font-semibold text-slate-800">Nome:</span> {showGuardianInfo ? `${formData.guardianFirstName} ${formData.guardianLastName}` : (formData.fatherName || formData.motherName || 'N/A')}
+                                     </div>
+                                     <div className="text-sm text-slate-600">
+                                         <span className="font-semibold text-slate-800">Parentesco:</span> {showGuardianInfo ? formData.guardianRelationship : (formData.fatherName ? 'Pai' : 'Mãe')}
+                                     </div>
+                                     </>
+                                 ) : (
+                                     <div className="text-sm text-slate-400 italic">Não informado</div>
+                                 )}
+                             </div>
+                         </div>
+                    </div>
+
+                    <div className="flex justify-end w-full gap-4">
+                        <button 
+                            onClick={resetForm}
+                            className="px-6 py-2.5 rounded border border-slate-300 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Criar Novo Aluno
+                        </button>
+                        <button 
+                            onClick={handleFinalize}
+                            className="px-6 py-2.5 rounded bg-[#00984A] text-white font-bold text-sm hover:bg-[#00984A]/90 transition-colors flex items-center gap-2"
+                        >
+                            Finalizar
+                            <span className="material-icons-outlined text-lg">check</span>
+                        </button>
                     </div>
                 </div>
             </div>
