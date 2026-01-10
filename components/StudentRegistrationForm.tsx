@@ -80,6 +80,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Dados do Aluno');
   const [showGuardianInfo, setShowGuardianInfo] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   
   const isCleanExit = useRef(false);
   
@@ -131,6 +132,14 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
               guardianFirstName: first,
               guardianMiddleName: middle,
               guardianLastName: last
+          };
+      } else {
+          // If switching to something else, clear the fields
+           updates = {
+              ...updates,
+              guardianFirstName: '',
+              guardianMiddleName: '',
+              guardianLastName: ''
           };
       }
       
@@ -277,18 +286,51 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       } else if (activeTab === 'Documentos') {
           setActiveTab('Filiação');
       }
-      // Note: "Voltar" not available for first tab based on UI logic below
   };
   
-  const handleCancelWithConfirmation = () => {
-      if (window.confirm("Deseja cancelar a inscrição? Todos os dados não salvos serão perdidos.")) {
-          isCleanExit.current = true;
-          onCancel();
-      }
+  const handleCancelClick = () => {
+      setShowCancelModal(true);
+  };
+
+  const confirmCancel = () => {
+      setShowCancelModal(false);
+      isCleanExit.current = true;
+      onCancel();
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm w-full h-full flex flex-col">
+    <div className="bg-white rounded-lg shadow-sm w-full h-full flex flex-col relative">
+       {/* Cancel Confirmation Modal */}
+       {showCancelModal && (
+           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px] p-4">
+               <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                   <div className="flex flex-col items-center text-center">
+                       <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                           <span className="material-icons-outlined text-red-500 text-2xl">priority_high</span>
+                       </div>
+                       <h3 className="text-slate-800 font-bold text-lg mb-2">Cancelar Inscrição?</h3>
+                       <p className="text-slate-500 text-sm mb-6">
+                           Tem certeza que deseja cancelar? Todos os dados preenchidos até agora serão perdidos.
+                       </p>
+                       <div className="flex gap-3 w-full">
+                           <button 
+                               onClick={() => setShowCancelModal(false)}
+                               className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded text-slate-600 text-sm font-bold hover:bg-slate-100 transition-colors"
+                           >
+                               Não, continuar
+                           </button>
+                           <button 
+                               onClick={confirmCancel}
+                               className="flex-1 px-4 py-2 bg-red-500 border border-red-500 rounded text-white text-sm font-bold hover:bg-red-600 transition-colors"
+                           >
+                               Sim, cancelar
+                           </button>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       )}
+
        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
         {tabs.map((tab) => (
             <button
@@ -418,7 +460,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     </div>
                     
                     <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100 items-center">
-                         <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
+                         <button onClick={handleCancelClick} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                         <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
                     </div>
                 </div>
@@ -514,7 +556,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                 </div>
 
                 <div className="flex justify-between gap-3 mt-auto pt-4 border-t border-slate-100 items-center">
-                     <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
+                     <button onClick={handleCancelClick} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                     <div className="flex gap-3">
                          <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
                         <button onClick={handleNext} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">Próximo <span className="material-icons-outlined text-sm">chevron_right</span></button>
@@ -526,7 +568,7 @@ const StudentRegistrationForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                 <span className="material-icons-outlined text-4xl mb-2">folder_open</span>
                 <p className="text-sm">Envio de Documentos</p>
                 <div className="flex justify-between w-full px-6 mt-8 items-center">
-                     <button onClick={handleCancelWithConfirmation} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
+                     <button onClick={handleCancelClick} className="px-5 py-2 rounded text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Cancelar</button>
                      <div className="flex gap-3">
                          <button onClick={handleBack} className="px-5 py-2 rounded text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50">Voltar</button>
                          <button onClick={handleSubmit} className="px-5 py-2 rounded text-xs font-bold text-white bg-[#00984A] hover:bg-[#00984A]/90 flex items-center gap-1">
