@@ -182,193 +182,170 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
   return (
     <Layout user={user} title="Administração Financeira">
-      {/* Tabs / Navigation */}
       <div className="mb-8">
-        <div className="flex gap-2 overflow-x-auto pb-4 hide-scrollbar">
-          {[
-            { id: 'overview', label: 'Visão Geral', icon: 'grid_view' },
-            { id: 'charges', label: 'Cobranças', icon: 'assignment' },
-            { id: 'payments', label: 'Pagamentos', icon: 'payments' },
-            { id: 'reports', label: 'Relatórios', icon: 'bar_chart' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-[#137FEC] text-white shadow-lg shadow-blue-200'
-                  : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
-              <span className="capitalize">{tab.label}</span>
-            </button>
-          ))}
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
+      </div>
+
+      {/* Stats Grid - 5 Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {/* Receitas do Mês */}
+        <div className="bg-[#EBFAF2] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+           <div className="size-12 rounded-xl bg-[#27AE60] flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-2xl font-black">group</span>
+           </div>
+           <div>
+              <p className="text-2xl font-black text-[#27AE60] leading-tight">{formatCurrency(stats.receitasMes)}</p>
+              <p className="text-[11px] text-[#27AE60] font-black uppercase tracking-wider mt-0.5">Receitas do Mês</p>
+           </div>
+        </div>
+
+        {/* Cobranças Pendentes */}
+        <div className="bg-[#EBF5FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+           <div className="size-12 rounded-xl bg-[#137FEC] flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-2xl font-black">trending_up</span>
+           </div>
+           <div>
+              <p className="text-2xl font-black text-[#137FEC] leading-tight">{stats.cobrancasPendentes}</p>
+              <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">Cobranças Pendentes</p>
+           </div>
+        </div>
+
+        {/* Inadimplentes */}
+        <div className="bg-[#FFF9EB] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+           <div className="size-12 rounded-xl bg-[#F2994A] flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-2xl font-black">warning</span>
+           </div>
+           <div>
+              <p className="text-2xl font-black text-[#F2994A] leading-tight">{stats.alunosInadimplentes}</p>
+              <p className="text-[11px] text-[#F2994A] font-black uppercase tracking-wider mt-0.5">Inadimplentes</p>
+           </div>
+        </div>
+
+        {/* Pagamentos Hoje - Red */}
+        <div className="bg-[#FEEBF0] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+           <div className="size-12 rounded-xl bg-[#EB5757] flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-2xl font-black">error</span>
+           </div>
+           <div>
+              <p className="text-2xl font-black text-[#EB5757] leading-tight">{stats.pagamentosHoje}</p>
+              <p className="text-[11px] text-[#EB5757] font-black uppercase tracking-wider mt-0.5">Pagamentos Hoje</p>
+           </div>
+        </div>
+
+        {/* Pagamentos Hoje - Cyan */}
+        <div className="bg-[#EBF9FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+           <div className="size-12 rounded-xl bg-[#2D9CDB] flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-2xl font-black">folder</span>
+           </div>
+           <div>
+              <p className="text-2xl font-black text-[#2D9CDB] leading-tight">{stats.pagamentosHoje}</p>
+              <p className="text-[11px] text-[#2D9CDB] font-black uppercase tracking-wider mt-0.5">Pagamentos Hoje</p>
+           </div>
         </div>
       </div>
 
-      {/* TAB: Visão Geral */}
-      {activeTab === 'overview' && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Card: Receitas */}
-            <Card className="hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Receitas do Mês</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">
-                    {formatCurrency(stats.receitasMes)}
-                  </p>
-                  <div className="flex items-center gap-1 mt-4">
-                    <span className="material-symbols-outlined text-green-500 text-sm font-black">trending_up</span>
-                    <span className="text-xs text-green-600 font-bold">+12% vs mês anterior</span>
-                  </div>
-                </div>
-                <div className="size-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                  <span className="material-symbols-outlined text-2xl">trending_up</span>
-                </div>
+      {/* Main Content Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        {/* Left Column (7/12) */}
+        <div className="lg:col-span-7 space-y-8">
+          {/* Cobranças em Atraso */}
+          <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
+            <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-50">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-[#EB5757] text-2xl font-black">warning</span>
+                <h3 className="font-black text-slate-800 tracking-tight text-lg">Cobranças em Atraso</h3>
               </div>
-            </Card>
-
-            {/* Card: Cobranças */}
-            <Card className="hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Cobranças Pendentes</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.cobrancasPendentes}</p>
-                  <div className="flex items-center gap-1 mt-4">
-                    <span className="material-symbols-outlined text-orange-500 text-sm font-black">schedule</span>
-                    <span className="text-xs text-orange-600 font-bold">Aguardando pagamento</span>
-                  </div>
-                </div>
-                <div className="size-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                  <span className="material-symbols-outlined text-2xl">assignment_late</span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Card: Inadimplentes */}
-            <Card className="hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Inadimplentes</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.alunosInadimplentes}</p>
-                  <div className="flex items-center gap-1 mt-4">
-                    <span className="material-symbols-outlined text-red-500 text-sm font-black">warning</span>
-                    <span className="text-xs text-red-600 font-bold">Requer atenção</span>
-                  </div>
-                </div>
-                <div className="size-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
-                  <span className="material-symbols-outlined text-2xl">person_off</span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Card: Pagamentos */}
-            <Card className="hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Pagamentos Hoje</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.pagamentosHoje}</p>
-                  <div className="flex items-center gap-1 mt-4 text-blue-600">
-                    <span className="material-symbols-outlined text-sm font-black">account_balance_wallet</span>
-                    <span className="text-xs font-bold">{formatCurrency(stats.valorPagamentosHoje)} MZN</span>
-                  </div>
-                </div>
-                <div className="size-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                  <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
-                </div>
-              </div>
-            </Card>
+              <button 
+                onClick={() => setActiveTab('charges')} 
+                className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight"
+              >
+                Ver todas
+              </button>
+            </div>
+            
+            <div className="py-14 flex flex-col items-center justify-center text-slate-400">
+              <p className="text-base font-bold tracking-tight text-center max-w-xs">
+                <span className="text-slate-900">Nenhuma cobrança</span> está atualmente em atraso.
+              </p>
+            </div>
           </div>
 
-          {/* Main Content Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Column 1: Cobranças em Atraso */}
-            <Card className="min-h-[400px]">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-500">warning</span>
-                  <h3 className="font-black text-slate-900 tracking-tight uppercase text-sm">Cobranças em Atraso</h3>
-                </div>
-                <button onClick={() => setActiveTab('charges')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">
-                  Ver todas
-                </button>
-              </div>
-              
-              <div className="flex flex-col gap-4">
-                {recentTransactions.filter(t => t.status === 'Pendente').length === 0 ? (
-                  <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-                    <span className="material-symbols-outlined text-6xl mb-2">inventory_2</span>
-                    <p className="text-sm font-bold">Nenhuma pendência encontrada</p>
-                  </div>
-                ) : (
-                  recentTransactions.filter(t => t.status === 'Pendente').map((payment) => (
-                    <div key={payment.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                      <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
-                           <span className="material-symbols-outlined">person</span>
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-900 text-sm tracking-tight">{payment.studentName || 'Estudante'}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{payment.class || 'Classe'} • {payment.daysOverdue || 0} dias em atraso</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-slate-900 text-base">{formatCurrency(payment.amount)} MZN</p>
-                        <button className="text-[10px] font-black text-[#137FEC] hover:underline mt-1 uppercase">Notificar</button>
+          {/* Transacções Recentes (Left) */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 ml-2">
+              <span className="material-symbols-outlined text-[#137FEC] text-2xl">history</span>
+              <h3 className="font-black text-slate-800 tracking-tight text-lg">Transacções Recentes</h3>
+            </div>
+            
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
+              <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-5">
+                    <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
+                      <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-800 text-base tracking-tight leading-tight">Pagamento de Mensalidade</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="size-1 rounded-full bg-slate-300"></span>
+                        <p className="text-xs text-slate-400 font-bold">15:14 PM</p>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </Card>
-
-            {/* Column 2: Transacções Recentes */}
-            <Card className="min-h-[400px]">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-500">history</span>
-                  <h3 className="font-black text-slate-900 tracking-tight uppercase text-sm">Transacções Recentes</h3>
-                </div>
-                <button onClick={() => setActiveTab('payments')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">
-                  Ver histórico
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                {recentTransactions.length === 0 ? (
-                  <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-                    <span className="material-symbols-outlined text-6xl mb-2">history_toggle_off</span>
-                    <p className="text-sm font-bold">Sem transacções hoje</p>
                   </div>
-                ) : (
-                  recentTransactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-                      <div className="flex items-center gap-4">
-                        <div className={`size-10 rounded-full flex items-center justify-center ${tx.status === 'Sucesso' ? 'bg-green-50 text-green-500' : 'bg-orange-50 text-orange-500'}`}>
-                          <span className="material-symbols-outlined text-2xl font-black">
-                            {tx.status === 'Sucesso' ? 'check_circle' : 'schedule'}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-700 text-sm tracking-tight leading-tight">{tx.description}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                             <span className="size-1 rounded-full bg-slate-300"></span>
-                             <p className="text-[11px] text-slate-400 font-bold">{new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="font-black text-green-600 text-lg">+{formatCurrency(tx.amount)} MZN</p>
-                    </div>
-                  ))
-                )}
+                  <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+2000,00 MZN</p>
+                </div>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Right Column (5/12) */}
+        <div className="lg:col-span-5">
+          <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm h-full flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="font-black text-slate-800 tracking-tight text-lg leading-none">Transacções Recentes</h3>
+              <button 
+                onClick={() => setActiveTab('payments')} 
+                className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight"
+              >
+                Ver histórico
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-8">
+              <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+              <input 
+                type="text" 
+                placeholder="Buscar..." 
+                className="w-full bg-[#F8FAFC] border border-[#F1F5F9] rounded-2xl py-4.5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* List */}
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="group flex items-center justify-between p-4 rounded-2xl border border-transparent hover:border-slate-50 hover:bg-slate-50/50 transition-all cursor-pointer">
+                  <div className="flex items-center gap-4">
+                    <div className="size-11 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-[20px] font-black">check_circle</span>
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-800 text-[13px] tracking-tight leading-tight">Pagamento de Mensalidade - Entidade 12345</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="size-1 rounded-full bg-slate-300"></span>
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">15:14 PM</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="font-black text-[#27AE60] text-sm tracking-tighter shrink-0">+2000,0 MZN</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       {/* TAB: Cobranças */}
       {activeTab === 'charges' && (
