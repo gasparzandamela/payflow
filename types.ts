@@ -54,4 +54,6 @@ export interface Transaction {
   amount: string;
   status: 'Sucesso' | 'Pendente' | 'Falhou';
   paymentMethod?: PaymentMethodType;
+  entity?: string; // New field
+  reference?: string; // New field
 }
