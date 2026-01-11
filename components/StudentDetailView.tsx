@@ -117,31 +117,23 @@ const StudentDetailView: React.FC<Props> = ({ student, onEditStudent, onBack }) 
                      <table className="w-full text-left text-sm text-slate-600">
                          <thead className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50 border-b border-slate-100">
                              <tr>
-                                 <th className="px-6 py-4">ID</th>
                                  <th className="px-6 py-4">Descrição</th>
                                  <th className="px-6 py-4">Referencia</th> 
                                  <th className="px-6 py-4">Montante</th>
                                  <th className="px-6 py-4">Data</th>
-                                 <th className="px-6 py-4 text-center">Acções</th> 
                              </tr>
                          </thead>
                          <tbody className="divide-y divide-slate-50">
                              {loading ? (
-                                 <tr><td colSpan={6} className="p-8 text-center text-slate-400">Carregando...</td></tr>
+                                 <tr><td colSpan={4} className="p-8 text-center text-slate-400">Carregando...</td></tr>
                              ) : transactions.length === 0 ? (
-                                 <tr><td colSpan={6} className="p-8 text-center text-slate-400">Nenhum pagamento encontrado.</td></tr>
+                                 <tr><td colSpan={4} className="p-8 text-center text-slate-400">Nenhum pagamento encontrado.</td></tr>
                              ) : transactions.map(tx => (
                                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                                     <td className="px-6 py-4 font-mono text-xs text-slate-400">#{tx.id.substring(0, 5)}</td>
                                      <td className="px-6 py-4 font-medium text-slate-800">{tx.description}</td>
-                                     <td className="px-6 py-4 font-mono text-slate-500">{tx.reference || '---'}</td> {/* Showing Reference here as requested */}
+                                     <td className="px-6 py-4 font-mono text-slate-500">{tx.reference || '---'}</td>
                                      <td className="px-6 py-4 font-bold text-slate-800">{tx.amount}</td>
                                      <td className="px-6 py-4 text-slate-500">{tx.date}</td>
-                                     <td className="px-6 py-4 text-center">
-                                         <button className="text-[#137FEC] hover:bg-[#E3F2FD] p-2 rounded-full transition-colors">
-                                             <span className="material-icons-outlined text-lg">search</span>
-                                         </button>
-                                     </td>
                                  </tr>
                              ))}
                          </tbody>
