@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import FinancialDashboard from './pages/FinancialDashboard';
 import ExecutiveDashboard from './pages/ExecutiveDashboard';
 import SecretariatDashboard from './pages/SecretariatDashboard';
+import Settings from './pages/Settings';
 import PaymentForm from './pages/PaymentForm';
 import PaymentConfirm from './pages/PaymentConfirm';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -89,6 +90,7 @@ const App: React.FC = () => {
 
   const completePayment = async (details: PaymentDetails) => {
     try {
+      // 1. Process via API (Simulado ou real)
       const response = await fetch('/api/payments/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +101,25 @@ const App: React.FC = () => {
 
       if (!response.ok) {
         throw new Error(result.message || result.error || 'Erro ao processar pagamento');
+      }
+
+      // 2. Registar transação na BD (Se a API já não o fizer)
+      await supabase.from('transactions').insert([{
+        student_id: user?.id,
+        description: details.chargeId ? 'Pagamento de Propina' : 'Pagamento Avulso',
+        amount: parseFloat(details.amount),
+        status: 'Sucesso',
+        payment_method: details.paymentMethod,
+        entity: details.entity,
+        reference: details.reference
+      }]);
+
+      // 3. Se vier de uma cobrança, marcar como paga
+      if (details.chargeId) {
+        await supabase
+          .from('charges')
+          .update({ status: 'paid' })
+          .eq('id', details.chargeId);
       }
 
       await fetchTransactions();
@@ -173,6 +194,12 @@ const App: React.FC = () => {
             ? <SecretariatDashboard user={user} /> 
             : <Navigate to={user ? '/dashboard' : '/login'} />
         } 
+      />
+
+      {/* Configurações */}
+      <Route 
+        path="/configuracoes" 
+        element={user ? <Settings user={user} /> : <Navigate to="/login" />} 
       />
       
       {/* Fluxo de Pagamento (estudantes) */}

@@ -24,6 +24,7 @@ export interface PaymentDetails {
   paymentMethod?: PaymentMethodType;
   phoneNumber?: string; // Para M-Pesa/e-Mola
   proofUrl?: string;    // Para comprovativo
+  chargeId?: string;    // ID da cobrança se vier de uma notificação
 }
 
 export interface User {
@@ -45,6 +46,8 @@ export interface User {
   father_name?: string;
   mother_name?: string;
   status?: string; // from previous migration
+  pin?: string;
+  avatar_url?: string;
 }
 
 export interface Transaction {

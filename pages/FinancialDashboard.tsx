@@ -31,6 +31,14 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   
+  const [formData, setFormData] = useState({
+    student_id: '',
+    description: '',
+    amount: '',
+    due_date: ''
+  });
+  const [students, setStudents] = useState<any[]>([]);
+
   // Real Data States
   const [stats, setStats] = useState({
     totalReceitas: 0,
@@ -41,10 +49,29 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     valorPagamentosHoje: 0
   });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [dbCharges, setDbCharges] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchStudents();
+    fetchChargesList();
   }, []);
+
+  const fetchChargesList = async () => {
+    const { data } = await supabase
+      .from('charges')
+      .select(`
+        *,
+        profiles:student_id (name)
+      `)
+      .order('due_date', { ascending: false });
+    setDbCharges(data || []);
+  };
+
+  const fetchStudents = async () => {
+    const { data } = await supabase.from('profiles').select('id, name').eq('role', 'student');
+    setStudents(data || []);
+  };
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -59,12 +86,21 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       if (txError) throw txError;
       setRecentTransactions(txs || []);
 
-      // 2. Calculate Stats
+      // 2. Fetch Real Charges Stats
+      const { data: charges } = await supabase
+        .from('charges')
+        .select('amount, status, due_date');
+      
+      const cobrancasPendentes = charges?.filter(c => c.status === 'pending').length || 0;
+      const totalPendentes = charges?.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      
       const now = new Date();
+      const inadimplentes = charges?.filter(c => c.status === 'pending' && new Date(c.due_date) < now).length || 0;
+
+      // 3. Transactions Stats
       const firstDayMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
-      // Receitas do Mês
       const { data: monthTxs } = await supabase
         .from('transactions')
         .select('amount')
@@ -73,7 +109,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       
       const receitasMes = monthTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
 
-      // Pagamentos Hoje
       const { data: todayTxs } = await supabase
         .from('transactions')
         .select('amount')
@@ -84,10 +119,10 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       const pagamentosHoje = todayTxs?.length || 0;
 
       setStats({
-        totalReceitas: 0, // Poderia ser calculado também
+        totalReceitas: 0,
         receitasMes,
-        cobrancasPendentes: 0, // Mock por enquanto (seria da tabela 'charges' se existisse)
-        alunosInadimplentes: 0,
+        cobrancasPendentes,
+        alunosInadimplentes: inadimplentes,
         pagamentosHoje,
         valorPagamentosHoje
       });
@@ -96,6 +131,32 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       console.error('Error fetching dashboard data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCreateCharge = async () => {
+    if (!formData.student_id || !formData.amount || !formData.due_date) {
+      alert('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('charges').insert([{
+        student_id: formData.student_id,
+        description: formData.description || 'Propina Mensal',
+        amount: parseFloat(formData.amount),
+        due_date: formData.due_date,
+        created_by: user.id
+      }]);
+
+      if (error) throw error;
+      
+      setShowChargeModal(false);
+      setFormData({ student_id: '', description: '', amount: '', due_date: '' });
+      fetchDashboardData();
+      alert('Cobrança gerada com sucesso!');
+    } catch (err: any) {
+      alert('Erro ao gerar cobrança: ' + err.message);
     }
   };
 
@@ -182,8 +243,12 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
   return (
     <Layout user={user} title="Administração Financeira">
-      <div className="mb-8">
+      <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
+        <Button onClick={() => setShowChargeModal(true)} className="flex items-center gap-2">
+           <span className="material-symbols-outlined text-sm">add</span>
+           Gerar Cobrança
+        </Button>
       </div>
 
       {/* Stats Grid - 5 Cards */}
@@ -265,7 +330,15 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             
             <div className="py-14 flex flex-col items-center justify-center text-slate-400">
               <p className="text-base font-bold tracking-tight text-center max-w-xs">
-                <span className="text-slate-900">Nenhuma cobrança</span> está atualmente em atraso.
+                {stats.alunosInadimplentes === 0 ? (
+                  <>
+                    <span className="text-slate-900">Nenhuma cobrança</span> está atualmente em atraso.
+                  </>
+                ) : (
+                  <>
+                    Existem <span className="text-slate-900 font-black">{stats.alunosInadimplentes} cobranças</span> em atraso.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -278,23 +351,31 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             </div>
             
             <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
-              <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-5">
-                    <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
-                      <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
-                    </div>
-                    <div>
-                      <p className="font-black text-slate-800 text-base tracking-tight leading-tight">Pagamento de Mensalidade</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="size-1 rounded-full bg-slate-300"></span>
-                        <p className="text-xs text-slate-400 font-bold">15:14 PM</p>
+              {recentTransactions.length > 0 ? (
+                <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-5">
+                      <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
+                        <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-800 text-base tracking-tight leading-tight">{recentTransactions[0].description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="size-1 rounded-full bg-slate-300"></span>
+                          <p className="text-xs text-slate-400 font-bold">
+                            {new Date(recentTransactions[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+{formatCurrency(recentTransactions[0].amount)} MZN</p>
                   </div>
-                  <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+2000,00 MZN</p>
                 </div>
-              </div>
+              ) : (
+                <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                  Sem transacções recentes
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -303,7 +384,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
         <div className="lg:col-span-5">
           <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm h-full flex flex-col">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="font-black text-slate-800 tracking-tight text-lg leading-none">Transacções Recentes</h3>
+              <h3 className="font-black text-slate-800 tracking-tight text-lg leading-none">Histórico</h3>
               <button 
                 onClick={() => setActiveTab('payments')} 
                 className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight"
@@ -317,28 +398,34 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
               <input 
                 type="text" 
-                placeholder="Buscar..." 
+                placeholder="Buscar transacção..." 
                 className="w-full bg-[#F8FAFC] border border-[#F1F5F9] rounded-2xl py-4.5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-900 placeholder:text-slate-400"
               />
             </div>
 
             {/* List */}
             <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="group flex items-center justify-between p-4 rounded-2xl border border-transparent hover:border-slate-50 hover:bg-slate-50/50 transition-all cursor-pointer">
+              {recentTransactions.map((tx) => (
+                <div key={tx.id} className="group flex items-center justify-between p-4 rounded-2xl border border-transparent hover:border-slate-50 hover:bg-slate-50/50 transition-all cursor-pointer">
                   <div className="flex items-center gap-4">
                     <div className="size-11 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm group-hover:scale-110 transition-transform">
-                      <span className="material-symbols-outlined text-[20px] font-black">check_circle</span>
+                      <span className="material-symbols-outlined text-[20px] font-black">
+                        {tx.status === 'Sucesso' ? 'check_circle' : 'schedule'}
+                      </span>
                     </div>
                     <div>
-                      <p className="font-black text-slate-800 text-[13px] tracking-tight leading-tight">Pagamento de Mensalidade - Entidade 12345</p>
+                      <p className="font-black text-slate-800 text-[13px] tracking-tight leading-tight">{tx.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="size-1 rounded-full bg-slate-300"></span>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">15:14 PM</p>
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight">
+                          {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <p className="font-black text-[#27AE60] text-sm tracking-tighter shrink-0">+2000,0 MZN</p>
+                  <p className={`font-black text-sm tracking-tighter shrink-0 ${tx.status === 'Sucesso' ? 'text-[#27AE60]' : 'text-orange-500'}`}>
+                    +{formatCurrency(tx.amount)} MZN
+                  </p>
                 </div>
               ))}
             </div>
@@ -349,85 +436,39 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
       {/* TAB: Cobranças */}
       {activeTab === 'charges' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Planos de Propinas</h3>
-              <Button variant="secondary" className="text-sm">
+              <h3 className="text-xl font-bold text-slate-900">Cobranças Ativas</h3>
+              <Button onClick={() => setShowChargeModal(true)} className="text-sm">
                 <span className="material-symbols-outlined text-lg mr-1">add</span>
-                Novo Plano
+                Nova Cobrança
               </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Plano</th>
-                    <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Classes</th>
-                    <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Valor Mensal</th>
-                    <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Alunos</th>
-                    <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Acções</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {TUITION_PLANS.map(plan => (
-                    <tr key={plan.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="py-4 px-4 font-bold text-slate-800">{plan.name}</td>
-                      <td className="py-4 px-4 text-slate-600">{plan.classes}</td>
-                      <td className="py-4 px-4 text-right font-black text-slate-900">{formatCurrency(plan.value)} MZN</td>
-                      <td className="py-4 px-4 text-right text-slate-600">{plan.students}</td>
-                      <td className="py-4 px-4 text-right">
-                        <button className="text-[#137FEC] hover:underline text-sm font-bold">Editar</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Cobranças Pendentes</h3>
-              <div className="flex gap-2">
-                <Button variant="secondary" className="text-sm">Gerar Mensais</Button>
-                <Button className="text-sm">Reemitir Seleccionadas</Button>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100">
                     <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Estudante</th>
-                    <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Referência</th>
+                    <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Descrição</th>
                     <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Valor</th>
                     <th className="text-center py-3 px-4 text-xs font-bold text-slate-400 uppercase">Vencimento</th>
                     <th className="text-center py-3 px-4 text-xs font-bold text-slate-400 uppercase">Status</th>
-                    <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Acções</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {PENDING_PAYMENTS_MOCK.map(payment => (
-                    <tr key={payment.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="py-4 px-4">
-                        <p className="font-bold text-slate-800">{payment.studentName}</p>
-                        <p className="text-xs text-slate-400">{payment.class}</p>
-                      </td>
-                      <td className="py-4 px-4 font-mono text-sm text-slate-600">{payment.reference}</td>
-                      <td className="py-4 px-4 text-right font-black text-slate-900">{formatCurrency(payment.amount)} MZN</td>
-                      <td className="py-4 px-4 text-center text-slate-600">{payment.dueDate}</td>
+                  {dbCharges.map(charge => (
+                    <tr key={charge.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="py-4 px-4 font-bold text-slate-800">{charge.profiles?.name || 'Estudante'}</td>
+                      <td className="py-4 px-4 text-slate-600">{charge.description}</td>
+                      <td className="py-4 px-4 text-right font-black text-slate-900">{formatCurrency(charge.amount)} MZN</td>
+                      <td className="py-4 px-4 text-center text-slate-600">{new Date(charge.due_date).toLocaleDateString()}</td>
                       <td className="py-4 px-4 text-center">
-                        <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                          {payment.daysOverdue}d atraso
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          charge.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {charge.status === 'paid' ? 'Pago' : 'Pendente'}
                         </span>
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <button 
-                          onClick={() => { setSelectedPayment(payment); setShowPaymentModal(true); }}
-                          className="text-[#137FEC] hover:underline text-sm font-bold"
-                        >
-                          Registar Pagamento
-                        </button>
                       </td>
                     </tr>
                   ))}
@@ -441,19 +482,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       {/* TAB: Pagamentos */}
       {activeTab === 'payments' && (
         <div className="space-y-6">
-          <div className="flex gap-4 mb-4">
-            <Button onClick={() => setShowPaymentModal(true)} className="flex items-center gap-2">
-              <span className="material-symbols-outlined">add</span>
-              Registar Pagamento Manual
-            </Button>
-            <Button variant="secondary" className="flex items-center gap-2">
-              <span className="material-symbols-outlined">upload_file</span>
-              Validar Comprovativos
-            </Button>
-          </div>
-
           <Card className="p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Histórico de Pagamentos</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Histórico de Transacções</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -462,8 +492,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                     <th className="text-left py-3 px-4 text-xs font-bold text-slate-400 uppercase">Método</th>
                     <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Valor</th>
                     <th className="text-center py-3 px-4 text-xs font-bold text-slate-400 uppercase">Status</th>
-                    <th className="text-center py-3 px-4 text-xs font-bold text-slate-400 uppercase">Hora</th>
-                    <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase">Acções</th>
+                    <th className="text-center py-3 px-4 text-xs font-bold text-slate-400 uppercase">Data</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -479,11 +508,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                           {tx.status}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center text-slate-600">{new Date(tx.created_at).toLocaleTimeString()}</td>
-                      <td className="py-4 px-4 text-right">
-                        <button className="text-[#137FEC] hover:underline text-sm font-bold mr-3">Recibo</button>
-                        <button className="text-slate-400 hover:text-slate-600 text-sm font-bold">Factura</button>
-                      </td>
+                      <td className="py-4 px-4 text-center text-slate-600">{new Date(tx.created_at).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -533,79 +558,48 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               </div>
             </Card>
           </div>
-
-          <Card className="p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Resumo Mensal</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-slate-50 rounded-xl">
-                <p className="text-3xl font-black text-slate-900">{formatCurrency(stats.receitasMes)}</p>
-                <p className="text-sm text-slate-500 mt-1">Receitas</p>
-              </div>
-              <div className="text-center p-4 bg-slate-50 rounded-xl">
-                <p className="text-3xl font-black text-slate-900">{stats.pagamentosHoje * 30}</p>
-                <p className="text-sm text-slate-500 mt-1">Pagamentos (Est.)</p>
-              </div>
-              <div className="text-center p-4 bg-slate-50 rounded-xl">
-                <p className="text-3xl font-black text-orange-600">{stats.cobrancasPendentes}</p>
-                <p className="text-sm text-slate-500 mt-1">Pendentes</p>
-              </div>
-              <div className="text-center p-4 bg-slate-50 rounded-xl">
-                <p className="text-3xl font-black text-red-600">{stats.alunosInadimplentes}</p>
-                <p className="text-sm text-slate-500 mt-1">Inadimplentes</p>
-              </div>
-            </div>
-          </Card>
         </div>
-      )}
-
-      {/* Modal: Registar Pagamento */}
-      {showPaymentModal && (
-        <Modal 
-          isOpen={showPaymentModal} 
-          onClose={() => { setShowPaymentModal(false); setSelectedPayment(null); }}
-          title="Registar Pagamento Manual"
-        >
-          <div className="space-y-4">
-            {selectedPayment && (
-              <div className="p-4 bg-blue-50 rounded-xl mb-4">
-                <p className="text-sm text-blue-800">
-                  <strong>{selectedPayment.studentName}</strong> - {selectedPayment.class}
-                </p>
-                <p className="text-lg font-black text-blue-900 mt-1">
-                  {formatCurrency(selectedPayment.amount)} MZN
-                </p>
-              </div>
-            )}
-            <Input label="Estudante" placeholder="Nome ou ID do estudante" />
-            <Input label="Montante (MZN)" type="number" placeholder="0.00" />
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Método de Pagamento</label>
-              <select className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#137FEC]">
-                {Object.values(PAYMENT_METHODS).map(method => (
-                  <option key={method.code} value={method.code}>{method.name}</option>
-                ))}
-              </select>
-            </div>
-            <Input label="Referência" placeholder="Número da referência" />
-            <div className="flex gap-3 mt-6">
-              <Button variant="secondary" fullWidth onClick={() => setShowPaymentModal(false)}>Cancelar</Button>
-              <Button fullWidth onClick={() => { alert('Pagamento registado!'); setShowPaymentModal(false); }}>Confirmar</Button>
-            </div>
-          </div>
-        </Modal>
       )}
 
       {/* Modal: Nova Cobrança */}
       {showChargeModal && (
         <Modal isOpen={showChargeModal} onClose={() => setShowChargeModal(false)} title="Gerar Nova Cobrança">
           <div className="space-y-4">
-            <Input label="Estudante" placeholder="Nome ou ID do estudante" />
-            <Input label="Descrição" placeholder="Ex: Propina Janeiro 2026" />
-            <Input label="Montante (MZN)" type="number" placeholder="0.00" />
-            <Input label="Data de Vencimento" type="date" />
+            <div>
+               <label className="block text-sm font-bold text-slate-700 mb-2">Estudante</label>
+               <select 
+                 className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#137FEC] font-bold"
+                 value={formData.student_id}
+                 onChange={(e) => setFormData({...formData, student_id: e.target.value})}
+               >
+                 <option value="">Seleccione um estudante</option>
+                 {students.map(s => (
+                   <option key={s.id} value={s.id}>{s.name}</option>
+                 ))}
+               </select>
+            </div>
+            <Input 
+              label="Descrição" 
+              placeholder="Ex: Propina Janeiro 2026" 
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
+            <Input 
+              label="Montante (MZN)" 
+              type="number" 
+              placeholder="0.00" 
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: e.target.value})}
+            />
+            <Input 
+              label="Data de Vencimento" 
+              type="date" 
+              value={formData.due_date}
+              onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+            />
             <div className="flex gap-3 mt-6">
               <Button variant="secondary" fullWidth onClick={() => setShowChargeModal(false)}>Cancelar</Button>
-              <Button fullWidth onClick={() => { alert('Cobrança gerada!'); setShowChargeModal(false); }}>Gerar Cobrança</Button>
+              <Button fullWidth onClick={handleCreateCharge}>Gerar Cobrança</Button>
             </div>
           </div>
         </Modal>

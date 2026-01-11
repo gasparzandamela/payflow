@@ -22,6 +22,7 @@ const getMenuItems = (role?: string) => {
       { name: 'Cobranças', icon: 'assignment', path: '#' },
       { name: 'Pagamentos', icon: 'payments', path: '#' },
       { name: 'Relatórios', icon: 'bar_chart', path: '#' },
+      { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
     ];
   }
   
@@ -35,9 +36,9 @@ const getMenuItems = (role?: string) => {
 
   // Default Student Menu
   return [
-    { name: 'Dia-a-Dia', icon: 'account_balance_wallet', path: '/dashboard' },
+    { name: 'Dia-a-Dia', icon: 'home', path: '/dashboard' },
     { name: 'Pagar', icon: 'payments', path: '/pay' },
-    { name: 'Configurações', icon: 'settings', path: '#' },
+    { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
   ];
 };
 
@@ -169,9 +170,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
                 </span>
               </div>
             )}
-            <div className="size-9 md:size-11 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200 overflow-hidden bg-slate-200 cursor-pointer hover:ring-[#137FEC] transition-all">
+            <div 
+              onClick={() => navigate('/configuracoes')}
+              className="size-9 md:size-11 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200 overflow-hidden bg-slate-200 cursor-pointer hover:ring-[#137FEC] transition-all"
+            >
                <img 
-                src="https://picsum.photos/seed/user/100/100" 
+                src={user?.avatar_url || "https://picsum.photos/seed/user/100/100"} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
                />

@@ -1,11 +1,20 @@
 
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { User, Transaction } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import { supabase } from '../supabaseClient';
+
+interface Charge {
+  id: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  status: 'pending' | 'paid';
+}
 
 interface DashboardProps {
   user: User;
@@ -13,40 +22,100 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
+  const [pendingCharge, setPendingCharge] = useState<Charge | null>(null);
+  const [loadingCharge, setLoadingCharge] = useState(true);
+
+  useEffect(() => {
+    const fetchCharges = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('charges')
+          .select('*')
+          .eq('student_id', user.id)
+          .eq('status', 'pending')
+          .order('due_date', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching charges:', error);
+        } else {
+          setPendingCharge(data);
+        }
+      } catch (err) {
+        console.error('Exception fetching charges:', err);
+      } finally {
+        setLoadingCharge(false);
+      }
+    };
+
+    if (user.id) {
+      fetchCharges();
+    }
+  }, [user.id]);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(val);
+  };
+
+  const getDaysUntil = (dateStr: string) => {
+    const today = new Date();
+    const dueDate = new Date(dateStr);
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   return (
     <Layout user={user} title="Dia-a-Dia">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
-        {/* Next Payment Card */}
-        <Card hoverEffect className="flex flex-col justify-between group">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Próxima Mensalidade</p>
-              <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">Março 2026</h3>
-              <p className="text-[10px] md:text-xs text-red-500 mt-1.5 font-black uppercase flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">warning</span>
-                Vence em 5 dias
-              </p>
+        {/* Next Payment Card - Only shows if there is a pending charge */}
+        {pendingCharge ? (
+          <Card hoverEffect className="flex flex-col justify-between group border-2 border-blue-100/50 shadow-blue-50">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Próxima Mensalidade</p>
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">{pendingCharge.description}</h3>
+                {getDaysUntil(pendingCharge.due_date) <= 5 && (
+                  <p className="text-[10px] md:text-xs text-red-500 mt-1.5 font-black uppercase flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                    Vence em {getDaysUntil(pendingCharge.due_date)} dias
+                  </p>
+                )}
+              </div>
+              <div className="p-3 md:p-4 bg-blue-50 rounded-2xl text-[#137FEC] group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">calendar_month</span>
+              </div>
             </div>
-            <div className="p-3 md:p-4 bg-blue-50 rounded-2xl text-[#137FEC] group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">calendar_month</span>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-6 gap-4">
+              <div>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Valor Total</p>
+                <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">
+                  {formatCurrency(pendingCharge.amount)} <span className="text-lg text-slate-400">MZN</span>
+                </p>
+              </div>
+              
+              <Link to="/pay" state={{ charge: pendingCharge }}>
+                  <Button className="flex items-center gap-2 group/btn">
+                      <span>Pagar agora</span>
+                      <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                  </Button>
+              </Link>
             </div>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-6 gap-4">
-            <div>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Valor Total</p>
-              <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">4.500,00 <span className="text-lg text-slate-400">MZN</span></p>
-            </div>
-            
-            <Link to="/pay">
-                <Button className="flex items-center gap-2 group/btn">
-                    <span>Pagar agora</span>
-                    <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
-                </Button>
-            </Link>
-          </div>
-        </Card>
+          </Card>
+        ) : !loadingCharge && (
+          <Card className="flex items-center justify-center p-8 bg-slate-50/50 border-dashed border-2 border-slate-200">
+             <div className="text-center group">
+                <div className="size-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 text-slate-300 group-hover:scale-110 transition-transform shadow-sm">
+                   <span className="material-symbols-outlined text-3xl">verified</span>
+                </div>
+                <h3 className="font-black text-slate-800 text-lg tracking-tight">Tudo em dia!</h3>
+                <p className="text-sm text-slate-400 font-medium">Não há mensalidades pendentes no momento.</p>
+             </div>
+          </Card>
+        )}
 
-        {/* Status Card */}
+        {/* Status Card (Always visible) */}
         <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex justify-between items-start mb-6">
             <div>

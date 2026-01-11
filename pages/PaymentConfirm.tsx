@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PaymentDetails } from '../types';
+import { PaymentDetails, PAYMENT_METHODS } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
@@ -14,11 +14,14 @@ interface PaymentConfirmProps {
 
 const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) => {
   const navigate = useNavigate();
+  const method = details.paymentMethod ? PAYMENT_METHODS[details.paymentMethod] : null;
 
   const handleConfirm = () => {
     onConfirm();
     navigate('/pay/success');
   };
+
+  const isMobileMoney = details.paymentMethod === 'MPESA' || details.paymentMethod === 'EMOLA';
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-slate-50 overflow-x-hidden">
@@ -32,44 +35,60 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
               <span className="material-symbols-outlined text-4xl text-[#137FEC]">verified_user</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Confirmar Pagamento</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Confirmar Detalhes</h1>
             <p className="mt-2 text-sm text-slate-500 leading-relaxed font-medium">
-              Por favor, verifique os dados abaixo com atenção antes de finalizar a transação.
+              Verifique as informações antes de confirmar o pagamento.
             </p>
           </div>
           
           <div className="px-10 py-2">
-            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-8 space-y-8">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4 border-dashed">
+            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-8 space-y-6">
+              {/* Method Header */}
+              <div className="flex items-center gap-4 pb-6 border-b border-slate-200 border-dashed">
+                 <div className="size-12 rounded-xl flex items-center justify-center text-white shrink-0" style={{ backgroundColor: method?.color }}>
+                    <span className="material-symbols-outlined">{method?.icon}</span>
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Método de Pagamento</p>
+                    <p className="font-black text-slate-800 text-lg">{method?.name}</p>
+                 </div>
+              </div>
+
+              {isMobileMoney ? (
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Entidade</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Número de Telefone</span>
                   <div className="mt-1 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-400">corporate_fare</span>
-                    <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.entity || '21423'}</span>
+                    <span className="material-symbols-outlined text-slate-400">contact_phone</span>
+                    <span className="font-mono text-xl font-black text-slate-900 tracking-[0.2em]">+258 {details.phoneNumber}</span>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4 border-dashed">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Referência</span>
-                  <div className="mt-1 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-400">qr_code</span>
-                    <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.reference || '123 456 789'}</span>
+              ) : (
+                <>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Entidade</span>
+                    <div className="mt-1 flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-400">corporate_fare</span>
+                      <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.entity}</span>
+                    </div>
                   </div>
-                </div>
-              </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Referência</span>
+                    <div className="mt-1 flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-400">qr_code</span>
+                      <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.reference}</span>
+                    </div>
+                  </div>
+                </>
+              )}
               
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-6 border-t border-slate-200 border-dashed">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Montante Total</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Valor Total</span>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 tracking-tighter">{details.amount || '150,00'}</span>
+                    <span className="text-3xl font-black text-slate-900 tracking-tighter">{details.amount}</span>
                     <span className="text-lg font-bold text-slate-400">MZN</span>
                   </div>
-                </div>
-                <div className="size-14 items-center justify-center rounded-full bg-[#137FEC]/10 flex">
-                  <span className="material-symbols-outlined text-[#137FEC] text-2xl">payments</span>
                 </div>
               </div>
             </div>
@@ -78,15 +97,15 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
           <div className="p-10 flex flex-col gap-4">
             <Button 
                 onClick={handleConfirm}
-                className="w-full gap-2 shadow-lg shadow-blue-500/30 group"
-                icon={<span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>}
+                className="w-full py-5 rounded-2xl gap-2 shadow-xl shadow-blue-500/20 font-black uppercase tracking-widest group"
             >
-                Confirmar e Pagar
+                Confirmar e Finalizar
+                <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
             </Button>
             
             <Link to="/pay" className="w-full">
-                <Button variant="ghost" fullWidth className="text-slate-400 hover:text-slate-900">
-                   Voltar para editar dados
+                <Button variant="ghost" fullWidth className="text-slate-400 font-bold uppercase text-xs tracking-widest hover:text-slate-900">
+                   Editar informações
                 </Button>
             </Link>
           </div>
