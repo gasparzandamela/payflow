@@ -18,8 +18,8 @@ interface LayoutProps {
 const getMenuItems = (role?: string) => {
   if (role === 'admin_financeiro') {
     return [
-      { name: 'Dashboard', icon: 'dashboard', path: '/financeiro' },
-      { name: 'Relatórios', icon: 'analytics', path: '/financeiro' },
+      { name: 'Dashboard', icon: 'grid_view', path: '/financeiro' },
+      { name: 'Relatórios', icon: 'bar_chart', path: '#' },
       { name: 'Configurações', icon: 'settings', path: '#' },
     ];
   }

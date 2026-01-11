@@ -182,27 +182,26 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
   return (
     <Layout user={user} title="Administração Financeira">
-      {/* Header com tabs */}
+      {/* Tabs / Navigation */}
       <div className="mb-8">
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-4 hide-scrollbar">
           {[
-            { id: 'overview', label: 'Visão Geral', icon: 'dashboard' },
-            { id: 'charges', label: 'Cobranças', icon: 'receipt_long' },
+            { id: 'overview', label: 'Visão Geral', icon: 'grid_view' },
+            { id: 'charges', label: 'Cobranças', icon: 'assignment' },
             { id: 'payments', label: 'Pagamentos', icon: 'payments' },
-            { id: 'reports', label: 'Relatórios', icon: 'analytics' },
+            { id: 'reports', label: 'Relatórios', icon: 'bar_chart' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-[#137FEC] text-white shadow-lg shadow-blue-200'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
               }`}
             >
-              <span className="material-symbols-outlined text-lg">{tab.icon}</span>
-              {tab.label}
+              <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+              <span className="capitalize">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -210,142 +209,165 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
       {/* TAB: Visão Geral */}
       {activeTab === 'overview' && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Card hoverEffect className="group">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Card: Receitas */}
+            <Card className="hover:scale-[1.02] transition-transform duration-300">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Receitas do Mês</p>
-                  <p className="text-2xl font-black text-slate-900 mt-2">{formatCurrency(stats.receitasMes)}</p>
-                  <p className="text-xs text-green-600 font-bold mt-1 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">trending_up</span>
-                    +12% vs mês anterior
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Receitas do Mês</p>
+                  <p className="text-3xl font-black text-slate-900 leading-none">
+                    {formatCurrency(stats.receitasMes)}
                   </p>
+                  <div className="flex items-center gap-1 mt-4">
+                    <span className="material-symbols-outlined text-green-500 text-sm font-black">trending_up</span>
+                    <span className="text-xs text-green-600 font-bold">+12% vs mês anterior</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-green-50 rounded-xl text-green-600 group-hover:scale-110 transition-transform">
+                <div className="size-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
                   <span className="material-symbols-outlined text-2xl">trending_up</span>
                 </div>
               </div>
             </Card>
 
-            <Card hoverEffect className="group">
+            {/* Card: Cobranças */}
+            <Card className="hover:scale-[1.02] transition-transform duration-300">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cobranças Pendentes</p>
-                  <p className="text-2xl font-black text-slate-900 mt-2">{stats.cobrancasPendentes}</p>
-                  <p className="text-xs text-orange-600 font-bold mt-1 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                    Aguardando pagamento
-                  </p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Cobranças Pendentes</p>
+                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.cobrancasPendentes}</p>
+                  <div className="flex items-center gap-1 mt-4">
+                    <span className="material-symbols-outlined text-orange-500 text-sm font-black">schedule</span>
+                    <span className="text-xs text-orange-600 font-bold">Aguardando pagamento</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-orange-50 rounded-xl text-orange-600 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-2xl">pending_actions</span>
+                <div className="size-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                  <span className="material-symbols-outlined text-2xl">assignment_late</span>
                 </div>
               </div>
             </Card>
 
-            <Card hoverEffect className="group">
+            {/* Card: Inadimplentes */}
+            <Card className="hover:scale-[1.02] transition-transform duration-300">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inadimplentes</p>
-                  <p className="text-2xl font-black text-slate-900 mt-2">{stats.alunosInadimplentes}</p>
-                  <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">warning</span>
-                    Requer atenção
-                  </p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Inadimplentes</p>
+                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.alunosInadimplentes}</p>
+                  <div className="flex items-center gap-1 mt-4">
+                    <span className="material-symbols-outlined text-red-500 text-sm font-black">warning</span>
+                    <span className="text-xs text-red-600 font-bold">Requer atenção</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-red-50 rounded-xl text-red-600 group-hover:scale-110 transition-transform">
+                <div className="size-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
                   <span className="material-symbols-outlined text-2xl">person_off</span>
                 </div>
               </div>
             </Card>
 
-            <Card hoverEffect className="group">
+            {/* Card: Pagamentos */}
+            <Card className="hover:scale-[1.02] transition-transform duration-300">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Pagamentos Hoje</p>
-                  <p className="text-2xl font-black text-slate-900 mt-2">{stats.pagamentosHoje}</p>
-                  <p className="text-xs text-blue-600 font-bold mt-1 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">payments</span>
-                    {formatCurrency(stats.valorPagamentosHoje)} MZN
-                  </p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-2">Pagamentos Hoje</p>
+                  <p className="text-3xl font-black text-slate-900 leading-none">{stats.pagamentosHoje}</p>
+                  <div className="flex items-center gap-1 mt-4 text-blue-600">
+                    <span className="material-symbols-outlined text-sm font-black">account_balance_wallet</span>
+                    <span className="text-xs font-bold">{formatCurrency(stats.valorPagamentosHoje)} MZN</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:scale-110 transition-transform">
+                <div className="size-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                   <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
                 </div>
               </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          {/* Main Content Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Column 1: Cobranças em Atraso */}
+            <Card className="min-h-[400px]">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-red-500">warning</span>
-                  Cobranças em Atraso
-                </h3>
-                <button onClick={() => setActiveTab('charges')} className="text-xs font-bold text-[#137FEC] hover:underline">
+                  <h3 className="font-black text-slate-900 tracking-tight uppercase text-sm">Cobranças em Atraso</h3>
+                </div>
+                <button onClick={() => setActiveTab('charges')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">
                   Ver todas
                 </button>
               </div>
-              <div className="space-y-3">
-                {recentTransactions.length === 0 ? (
-                  <p className="text-center py-8 text-slate-400 text-sm">Nenhuma cobrança em atraso encontrada.</p>
-                ) : recentTransactions.filter(t => t.status === 'Pendente').map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-red-600">person</span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm">{payment.studentName}</p>
-                        <p className="text-xs text-slate-400">{payment.class} • {payment.daysOverdue} dias em atraso</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-slate-900">{formatCurrency(payment.amount)} MZN</p>
-                      <button className="text-xs font-bold text-[#137FEC] hover:underline mt-1">Notificar</button>
-                    </div>
+              
+              <div className="flex flex-col gap-4">
+                {recentTransactions.filter(t => t.status === 'Pendente').length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-300">
+                    <span className="material-symbols-outlined text-6xl mb-2">inventory_2</span>
+                    <p className="text-sm font-bold">Nenhuma pendência encontrada</p>
                   </div>
-                ))}
+                ) : (
+                  recentTransactions.filter(t => t.status === 'Pendente').map((payment) => (
+                    <div key={payment.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                           <span className="material-symbols-outlined">person</span>
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 text-sm tracking-tight">{payment.studentName || 'Estudante'}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{payment.class || 'Classe'} • {payment.daysOverdue || 0} dias em atraso</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-slate-900 text-base">{formatCurrency(payment.amount)} MZN</p>
+                        <button className="text-[10px] font-black text-[#137FEC] hover:underline mt-1 uppercase">Notificar</button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </Card>
 
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+            {/* Column 2: Transacções Recentes */}
+            <Card className="min-h-[400px]">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-blue-500">history</span>
-                  Transacções Recentes
-                </h3>
-                <button onClick={() => setActiveTab('payments')} className="text-xs font-bold text-[#137FEC] hover:underline">
+                  <h3 className="font-black text-slate-900 tracking-tight uppercase text-sm">Transacções Recentes</h3>
+                </div>
+                <button onClick={() => setActiveTab('payments')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">
                   Ver histórico
                 </button>
               </div>
-              <div className="space-y-3">
+
+              <div className="flex flex-col gap-2">
                 {recentTransactions.length === 0 ? (
-                  <p className="text-center py-8 text-slate-400 text-sm">Nenhuma transacção encontrada.</p>
-                ) : recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.status === 'Sucesso' ? 'bg-green-100' : 'bg-orange-100'}`}>
-                        <span className={`material-symbols-outlined ${tx.status === 'Sucesso' ? 'text-green-600' : 'text-orange-600'}`}>
-                          {tx.status === 'Sucesso' ? 'check_circle' : 'schedule'}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm">{tx.description}</p>
-                        <p className="text-xs text-slate-400">{tx.payment_method} • {new Date(tx.created_at).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-                    <p className="font-black text-green-600">+{formatCurrency(tx.amount)} MZN</p>
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-300">
+                    <span className="material-symbols-outlined text-6xl mb-2">history_toggle_off</span>
+                    <p className="text-sm font-bold">Sem transacções hoje</p>
                   </div>
-                ))}
+                ) : (
+                  recentTransactions.map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+                      <div className="flex items-center gap-4">
+                        <div className={`size-10 rounded-full flex items-center justify-center ${tx.status === 'Sucesso' ? 'bg-green-50 text-green-500' : 'bg-orange-50 text-orange-500'}`}>
+                          <span className="material-symbols-outlined text-2xl font-black">
+                            {tx.status === 'Sucesso' ? 'check_circle' : 'schedule'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-700 text-sm tracking-tight leading-tight">{tx.description}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                             <span className="size-1 rounded-full bg-slate-300"></span>
+                             <p className="text-[11px] text-slate-400 font-bold">{new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="font-black text-green-600 text-lg">+{formatCurrency(tx.amount)} MZN</p>
+                    </div>
+                  ))
+                )}
               </div>
             </Card>
           </div>
-
-
-        </>
+        </div>
       )}
 
       {/* TAB: Cobranças */}
