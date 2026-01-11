@@ -184,26 +184,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     <Layout user={user} title="Administração Financeira">
       {/* Header com tabs */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-              Painel Financeiro
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Gestão de cobranças, pagamentos e relatórios
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex items-center gap-2" onClick={() => exportReport('csv')}>
-              <span className="material-symbols-outlined text-lg">download</span>
-              Exportar CSV
-            </Button>
-            <Button className="flex items-center gap-2" onClick={() => setShowChargeModal(true)}>
-              <span className="material-symbols-outlined text-lg">add</span>
-              Nova Cobrança
-            </Button>
-          </div>
-        </div>
+{/* Header com tabs */}
+      <div className="mb-8">
+
 
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -365,30 +348,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             </Card>
           </div>
 
-          <Card className="mt-6 p-6">
-            <h3 className="font-bold text-slate-900 mb-4">Acções Rápidas</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {[
-                { icon: 'receipt_long', label: 'Gerar Cobranças', color: 'blue', action: () => setShowChargeModal(true) },
-                { icon: 'payments', label: 'Registar Pagamento', color: 'green', action: () => setShowPaymentModal(true) },
-                { icon: 'description', label: 'Emitir Recibo', color: 'purple', action: () => {} },
-                { icon: 'article', label: 'Emitir Factura', color: 'orange', action: () => {} },
-                { icon: 'sync', label: 'Conciliar', color: 'cyan', action: () => {} },
-                { icon: 'analytics', label: 'Relatório', color: 'pink', action: () => exportReport('pdf') },
-              ].map((action, i) => (
-                <button
-                  key={i}
-                  onClick={action.action}
-                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors group border border-slate-100"
-                >
-                  <span className="material-symbols-outlined text-2xl text-slate-600 group-hover:scale-110 transition-transform">
-                    {action.icon}
-                  </span>
-                  <span className="text-xs font-bold text-slate-600">{action.label}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
+
         </>
       )}
 
