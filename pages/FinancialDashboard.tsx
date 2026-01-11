@@ -184,10 +184,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     <Layout user={user} title="Administração Financeira">
       {/* Header com tabs */}
       <div className="mb-8">
-{/* Header com tabs */}
-      <div className="mb-8">
-
-
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[
