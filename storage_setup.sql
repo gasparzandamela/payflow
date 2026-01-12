@@ -18,7 +18,7 @@ WITH CHECK (
   bucket_id = 'avatars' AND 
   name LIKE (auth.uid()::text || '/%')
 );
-
+ 
 -- Policy to allow users to manage their own avatars (UPDATE, DELETE)
 DROP POLICY IF EXISTS "Users can manage their own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update their own avatars" ON storage.objects;
