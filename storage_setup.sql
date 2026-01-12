@@ -16,15 +16,20 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK ( 
   bucket_id = 'avatars' AND 
-  (storage.foldername(name))[1] = auth.uid()::text 
+  name LIKE (auth.uid()::text || '/%')
 );
 
--- Policy to allow users to update/delete their own avatars
+-- Policy to allow users to manage their own avatars (UPDATE, DELETE)
+DROP POLICY IF EXISTS "Users can manage their own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update their own avatars" ON storage.objects;
 CREATE POLICY "Users can manage their own avatars"
 ON storage.objects FOR ALL
 TO authenticated
 USING ( 
   bucket_id = 'avatars' AND 
-  (storage.foldername(name))[1] = auth.uid()::text 
+  name LIKE (auth.uid()::text || '/%')
+)
+WITH CHECK (
+  bucket_id = 'avatars' AND 
+  name LIKE (auth.uid()::text || '/%')
 );
