@@ -163,7 +163,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) =>
                             onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                             error={errors.phoneNumber}
                             className="text-lg font-bold"
-                            startIcon={<span className="text-slate-400 font-bold">+258</span>}
                           />
                         </div>
                         <div className="bg-blue-50/50 p-4 rounded-2xl flex items-start gap-3">

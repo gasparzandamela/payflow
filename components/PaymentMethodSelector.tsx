@@ -5,6 +5,8 @@
 
 import React from 'react';
 import { PaymentMethodType, PAYMENT_METHODS } from '../types';
+import mpesaLogo from '../image/mpesa.png';
+import emolaLogo from '../image/emola.png';
 
 interface PaymentMethodSelectorProps {
   selected?: PaymentMethodType;
@@ -65,9 +67,9 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                     style={{ backgroundColor: isSelected ? 'transparent' : `${method.color}15` }}
                   >
                     {methodCode === 'MPESA' ? (
-                      <img src="/image/mpesa.png" alt="M-Pesa" className="w-full h-full object-contain p-1" />
+                      <img src={mpesaLogo} alt="M-Pesa" className="w-full h-full object-contain p-1" />
                     ) : methodCode === 'EMOLA' ? (
-                      <img src="/image/emola.png" alt="e-Mola" className="w-full h-full object-contain p-1" />
+                      <img src={emolaLogo} alt="e-Mola" className="w-full h-full object-contain p-1" />
                     ) : (
                       <span 
                         className="material-symbols-outlined text-2xl"
