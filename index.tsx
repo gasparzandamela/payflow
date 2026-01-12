@@ -18,6 +18,8 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0, 
 });
 
+import { LanguageProvider } from './components/LanguageContext';
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
@@ -27,7 +29,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

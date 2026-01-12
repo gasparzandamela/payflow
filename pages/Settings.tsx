@@ -6,12 +6,14 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { supabase } from '../supabaseClient';
+import { useLanguage } from '../components/LanguageContext';
 
 interface SettingsProps {
   user: User;
 }
 
 const Settings: React.FC<SettingsProps> = ({ user }) => {
+  const { t } = useLanguage();
   const [pin, setPin] = useState(user.pin || '');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
 
     // Validations
     if (file.size > 2 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'O ficheiro deve ser menor que 2MB' });
+      setMessage({ type: 'error', text: t('file_too_large') });
       return;
     }
 
@@ -45,10 +47,10 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
-      setMessage({ type: 'success', text: 'Foto carregada! Clique em Salvar para confirmar.' });
+      setMessage({ type: 'success', text: t('photo_uploaded_save') });
     } catch (err: any) {
       console.error('Error uploading avatar:', err);
-      setMessage({ type: 'error', text: 'Erro no upload: ' + err.message });
+      setMessage({ type: 'error', text: t('upload_error') + err.message });
     } finally {
       setUploading(false);
     }
@@ -56,7 +58,7 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
 
   const handleUpdateProfile = async () => {
     if (pin && pin.length !== 6) {
-      setMessage({ type: 'error', text: 'O PIN deve ter exatamente 6 dígitos.' });
+      setMessage({ type: 'error', text: t('pin_must_be_6') });
       return;
     }
 
@@ -69,21 +71,21 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
         .eq('id', user.id);
 
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+      setMessage({ type: 'success', text: t('profile_updated') });
     } catch (err: any) {
       console.error('Error updating profile:', err);
-      setMessage({ type: 'error', text: 'Erro ao atualizar perfil: ' + err.message });
+      setMessage({ type: 'error', text: t('profile_updated_error') + err.message });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Layout user={user} title="Configurações">
+    <Layout user={user} title={t('settings_desc') as any}>
       <div className="max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">Configurações</h1>
-          <p className="text-slate-500 font-medium">Gerencie sua segurança e aparência do perfil.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">{t('settings')}</h1>
+          <p className="text-slate-500 font-medium">{t('manage_security_appearance')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -94,8 +96,8 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                 <span className="material-symbols-outlined">person</span>
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-lg leading-none">Avatar e Perfil</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Personalize sua conta</p>
+                <h3 className="font-black text-slate-800 text-lg leading-none">{t('avatar_profile')}</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">{t('personalize_account')}</p>
               </div>
             </div>
 
@@ -115,11 +117,11 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                  <label className="flex flex-col items-center justify-center w-full h-12 px-4 py-2 bg-white text-blue-600 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors font-bold text-sm">
                    <div className="flex items-center gap-2">
                      <span className="material-symbols-outlined text-lg">cloud_upload</span>
-                     <span>{uploading ? 'A carregar...' : 'Alterar Foto'}</span>
+                     <span>{uploading ? t('wait_loading') : t('change_photo')}</span>
                    </div>
                    <input type='file' className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
                  </label>
-                 <p className="text-[10px] text-center text-slate-400 font-medium mt-3 px-1 uppercase tracking-tight">Formatos: JPG, PNG. Máx: 2MB</p>
+                 <p className="text-[10px] text-center text-slate-400 font-medium mt-3 px-1 uppercase tracking-tight">{t('photo_formats')}</p>
                </div>
             </div>
           </Card>
@@ -131,14 +133,14 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                 <span className="material-symbols-outlined">lock</span>
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-lg leading-none">Segurança</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Mude seu código de acesso</p>
+                <h3 className="font-black text-slate-800 text-lg leading-none">{t('security')}</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">{t('change_pin')}</p>
               </div>
             </div>
 
             <div className="space-y-6 py-4">
                <div className="space-y-2">
-                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">PIN de Acesso (6 dígitos)</label>
+                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">{t('access_pin')}</label>
                  <Input 
                    type="text" 
                    placeholder="******" 
@@ -147,7 +149,7 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                    className="text-center text-2xl tracking-[0.5em] font-black"
                  />
-                 <p className="text-[10px] text-slate-400 italic px-1 font-medium">O seu PIN deve ter exatamente 6 dígitos numéricos.</p>
+                 <p className="text-[10px] text-slate-400 italic px-1 font-medium">{t('pin_notice')}</p>
                </div>
             </div>
             
@@ -159,12 +161,12 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                >
                  {loading ? (
                    <div className="size-5 border-2 border-white/30 border-t-white animate-spin rounded-full"></div>
-                 ) : (
-                   <>
-                     <span className="material-symbols-outlined text-lg">save</span>
-                     <span>Salvar Alterações</span>
-                   </>
-                 )}
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-lg">save</span>
+                      <span>{t('save')}</span>
+                    </>
+                  )}
                </Button>
             </div>
 

@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '../types';
@@ -8,18 +7,20 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
 import { supabase } from '../supabaseClient';
+import { useLanguage } from '../components/LanguageContext';
 
 interface LoginProps {
   onLogin: (user: User) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || result.message || 'Falha na autenticação');
+        throw new Error(result.error || result.message || t('auth_failed'));
       }
 
       if (result.user) {
@@ -49,7 +50,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         onLogin({
           id: result.user.id,
-          name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || 'Usuário',
+          name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || t('user'),
           email: result.user.email || '',
           role: profile?.role || 'student'
         });
@@ -57,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login.');
+      setError(err.message || t('login_error'));
     } finally {
       setLoading(false);
     }
@@ -77,8 +78,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
       <div className="relative z-10 flex gap-4 text-blue-200 text-sm font-medium">
         <span>© 2026 PayFlow Inc.</span>
-        <a className="hover:text-white transition-colors" href="#">Política de Privacidade</a>
-        <a className="hover:text-white transition-colors" href="#">Termos</a>
+        <a className="hover:text-white transition-colors" href="#">{t('privacy_policy')}</a>
+        <a className="hover:text-white transition-colors" href="#">{t('terms_service')}</a>
       </div>
     </>
   );
@@ -91,8 +92,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             
             <div className="text-center lg:text-left">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Bem-vindo ao EduPay</h1>
-              <p className="mt-2 text-slate-500">Por favor, insira seus dados para entrar.</p>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('login_title')}</h1>
+              <p className="mt-2 text-slate-500">{t('login_subtitle')}</p>
             </div>
   
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -103,12 +104,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               )}
               <div className="space-y-4">
                   <Input 
-                    label="Endereço de E-mail"
+                    label={t('email')}
                     id="email"
                     type="email"
                     autoComplete="email"
-                    startIcon={<span className="material-symbols-outlined text-[20px]">mail</span>}
-                    placeholder="name@company.com"
+                    // startIcon={<span className="material-symbols-outlined text-[20px]">mail</span>}
+                    placeholder="exemplo@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -116,11 +117,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   
                   <div>
                     <Input 
-                      label="Senha"
+                      label={t('password')}
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
-                      startIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
+                      // startIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
                       endIcon={
                         <button 
                           type="button"
@@ -132,19 +133,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                           </span>
                         </button>
                       }
-                      placeholder="Insira sua senha"
+                       placeholder={t('enter_password_placeholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                     <div className="flex justify-end mt-2">
-                       <Link className="text-sm font-medium text-[#137FEC] hover:text-blue-600" to="#">Esqueceu a Senha?</Link>
+                       <Link className="text-sm font-medium text-[#137FEC] hover:text-blue-600" to="#">{t('forgot_password')}</Link>
                     </div>
                   </div>
               </div>
   
               <Button type="submit" fullWidth isLoading={loading} disabled={loading}>
-                Entrar
+                {t('login_action')}
               </Button>
             </form>
   
@@ -153,7 +154,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="w-full border-t border-slate-100"></div>
               </div>
               <div className="relative flex justify-center text-sm font-medium leading-6">
-                <span className="bg-white px-4 text-slate-500">Ou continue com</span>
+                <span className="bg-white px-4 text-slate-500">{t('or_continue_with')}</span>
               </div>
             </div>
   
@@ -168,8 +169,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   
             <div className="text-center">
               <p className="text-sm text-slate-500">
-                Não tem uma conta? 
-                <Link to="/register" className="ml-1 font-semibold text-[#137FEC] hover:text-blue-600 transition-colors">Cadastre-se</Link>
+                {t('no_account')} 
+                <Link to="/register" className="ml-1 font-semibold text-[#137FEC] hover:text-blue-600 transition-colors">{t('sign_up')}</Link>
               </p>
             </div>
           </div>

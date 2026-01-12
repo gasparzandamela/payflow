@@ -7,6 +7,8 @@ import { User, Transaction } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { supabase } from '../supabaseClient';
+import { useLanguage } from '../components/LanguageContext';
+import { TranslationKey } from '../translations';
 
 interface Charge {
   id: string;
@@ -24,6 +26,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
   const [pendingCharge, setPendingCharge] = useState<Charge | null>(null);
   const [loadingCharge, setLoadingCharge] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchCharges = async () => {
@@ -67,19 +70,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
   };
 
   return (
-    <Layout user={user} title="Dia-a-Dia">
+    <Layout user={user} title={t('dashboard') as any}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
         {/* Next Payment Card - Only shows if there is a pending charge */}
         {pendingCharge ? (
           <Card hoverEffect className="flex flex-col justify-between group border-2 border-blue-100/50 shadow-blue-50">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Próxima Mensalidade</p>
+                <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">{t('next_payment')}</p>
                 <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">{pendingCharge.description}</h3>
                 {getDaysUntil(pendingCharge.due_date) <= 5 && (
                   <p className="text-[10px] md:text-xs text-red-500 mt-1.5 font-black uppercase flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">warning</span>
-                    Vence em {getDaysUntil(pendingCharge.due_date)} dias
+                    {t('days_left').replace('{days}', getDaysUntil(pendingCharge.due_date).toString())}
                   </p>
                 )}
               </div>
@@ -89,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-6 gap-4">
               <div>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Valor Total</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">{t('total_amount')}</p>
                 <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">
                   {formatCurrency(pendingCharge.amount)} <span className="text-lg text-slate-400">MZN</span>
                 </p>
@@ -97,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
               
               <Link to="/pay" state={{ charge: pendingCharge }}>
                   <Button className="flex items-center gap-2 group/btn">
-                      <span>Pagar agora</span>
+                      <span>{t('pay_now')}</span>
                       <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
                   </Button>
               </Link>
@@ -109,8 +112,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
                 <div className="size-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 text-slate-300 group-hover:scale-110 transition-transform shadow-sm">
                    <span className="material-symbols-outlined text-3xl">verified</span>
                 </div>
-                <h3 className="font-black text-slate-800 text-lg tracking-tight">Tudo em dia!</h3>
-                <p className="text-sm text-slate-400 font-medium">Não há mensalidades pendentes no momento.</p>
+                <h3 className="font-black text-slate-800 text-lg tracking-tight">{t('everything_up_to_date')}</h3>
+                <p className="text-sm text-slate-400 font-medium">{t('no_pending_tuition')}</p>
              </div>
           </Card>
         )}
@@ -119,11 +122,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
         <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">Status Académico</p>
-              <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">Matrícula Activa</h3>
+              <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest">{t('academic_status')}</p>
+              <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">{t('active_enrollment')}</h3>
               <p className="text-[10px] md:text-xs text-green-600 mt-1.5 font-black uppercase flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">verified</span>
-                Situação Regular
+                {t('regular_situation')}
               </p>
             </div>
             <div className="p-3 md:p-4 bg-green-50 rounded-2xl text-green-600 group-hover:scale-110 transition-transform">
@@ -145,12 +148,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
       <Card className="rounded-[2.5rem] p-6 md:p-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Histórico Recente</h2>
-            <p className="text-sm text-slate-400 font-medium">Seus últimos pagamentos efetuados</p>
+            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{t('recent_history')}</h2>
+            <p className="text-sm text-slate-400 font-medium">{t('recent_history_desc')}</p>
           </div>
           <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
             <span className="material-symbols-outlined text-[18px]">download</span>
-            <span>Relatório Completo</span>
+            <span>{t('full_report')}</span>
           </button>
         </div>
         
@@ -161,16 +164,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
                 <div className="size-16 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm">
                   <span className="material-symbols-outlined text-3xl opacity-30">receipt_long</span>
                 </div>
-                <p className="text-sm font-bold uppercase tracking-widest opacity-60">Nenhum registo encontrado</p>
+                <p className="text-sm font-bold uppercase tracking-widest opacity-60">{t('no_records')}</p>
               </div>
             ) : (
               <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead>
                   <tr className="text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">
-                    <th className="pb-4 pl-4">Transação</th>
-                    <th className="pb-4 text-center">Data</th>
-                    <th className="pb-4 text-right">Valor</th>
-                    <th className="pb-4 text-center pr-4">Status</th>
+                    <th className="pb-4 pl-4">{t('transaction')}</th>
+                    <th className="pb-4 text-center">{t('date')}</th>
+                    <th className="pb-4 text-right">{t('amount')}</th>
+                    <th className="pb-4 text-center pr-4">{t('status')}</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">

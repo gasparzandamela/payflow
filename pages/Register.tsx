@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '../types';
@@ -8,12 +7,14 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
 import { supabase } from '../supabaseClient';
+import { useLanguage } from '../components/LanguageContext';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onRegister }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     setError('');
 
     if (password !== confirmPassword) {
-        setError("As senhas não coincidem");
+        setError(t('passwords_do_not_match'));
         setLoading(false);
         return;
     }
@@ -49,17 +50,17 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || result.message || 'Falha ao criar conta');
+        throw new Error(result.error || result.message || t('failed_to_create_account'));
       }
 
       if (result.user) {
          if (result.message === 'Check your email') {
-             alert('Conta criada! Por favor, verifique seu e-mail para confirmar a conta.');
+             alert(t('account_created_check_email'));
              navigate('/login');
          } else {
              // Auto-logged in
              onRegister({
-               name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || 'Usuário',
+               name: result.user.user_metadata?.name || result.user.email?.split('@')[0] || t('user'),
                email: result.user.email || '',
              });
              navigate('/dashboard');
@@ -67,7 +68,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
       }
 
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta.');
+      setError(err.message || t('error_creating_account'));
     } finally {
       setLoading(false);
     }
@@ -79,18 +80,18 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
       <div className="relative z-10 w-full max-w-lg flex flex-col gap-10">
         <div className="flex flex-col gap-4">
           <h2 className="text-slate-900 tracking-tight text-3xl font-bold leading-tight">
-            Segurança bancária para seus pagamentos
+            {t('security_title')}
           </h2>
           <p className="text-slate-500 text-lg font-normal">
-            Junte-se a milhões de usuários que confiam no EduPay para suas transações financeiras.
+            {t('security_subtitle')}
           </p>
         </div>
         
         <div className="grid grid-cols-1 gap-4">
           {[
-            { title: 'Criptografia de Ponta a Ponta', desc: 'Seus dados são criptografados usando protocolos padrão da indústria.', icon: 'lock' },
-            { title: 'Proteção contra Fraude', desc: 'Sistemas de monitoramento em tempo real para detectar atividades suspeitas.', icon: 'shield' },
-            { title: 'Suporte Dedicado 24/7', desc: 'Nossa equipe de especialistas está sempre disponível para ajudá-lo.', icon: 'support_agent' }
+            { title: t('encryption_title'), desc: t('encryption_desc'), icon: 'lock' },
+            { title: t('fraud_protection_title'), desc: t('fraud_protection_desc'), icon: 'shield' },
+            { title: t('support_title'), desc: t('support_desc'), icon: 'support_agent' }
           ].map((feature, i) => (
             <div key={i} className="flex gap-4 rounded-2xl border border-slate-200 bg-white/80 p-5 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
               <div className="size-12 rounded-full bg-blue-50 flex items-center justify-center text-[#137FEC] shrink-0">
@@ -115,20 +116,20 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
           </div>
           
           <div className="flex flex-col gap-2">
-            <h1 className="text-slate-900 text-3xl md:text-4xl font-black leading-tight tracking-tight">Crie sua conta</h1>
+            <h1 className="text-slate-900 text-3xl md:text-4xl font-black leading-tight tracking-tight">{t('create_account_title')}</h1>
             <p className="text-slate-500 text-base font-normal">
-              Comece a gerenciar seus pagamentos com segurança hoje.
+              {t('create_account_subtitle')}
             </p>
           </div>
 
           <div className="flex flex-col gap-3">
             <Button variant="secondary" icon={<img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5 h-5" />}>
-               Entrar com Google
+               {t('sign_in_with_google')}
             </Button>
             
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-slate-100"></div>
-              <span className="flex-shrink-0 mx-4 text-[10px] font-bold text-slate-400 tracking-wider">OU CONTINUE COM E-MAIL</span>
+              <span className="flex-shrink-0 mx-4 text-[10px] font-bold text-slate-400 tracking-wider">{t('or_continue_with_email')}</span>
               <div className="flex-grow border-t border-slate-100"></div>
             </div>
           </div>
@@ -140,25 +141,25 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                 </div>
             )}
             <Input 
-              label="Nome Completo"
-              placeholder="ex: João Silva"
+              label={t('full_name_label')}
+              placeholder={t('full_name_placeholder')}
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <Input 
-              label="Endereço de E-mail"
+              label={t('email_address_label')}
               type="email"
               autoComplete="email"
-              placeholder="nome@exemplo.com"
+              placeholder={t('email_address_placeholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             <div className="flex flex-col md:flex-row gap-4">
                <Input 
-                  label="Senha"
+                  label={t('password_label')}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   containerClassName="flex-1"
@@ -179,8 +180,8 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <Input 
-                  label="Confirmar Senha"
+                 <Input 
+                  label={t('confirm_password')}
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   containerClassName="flex-1"
@@ -206,17 +207,17 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             <label className="flex items-start gap-3 mt-2 cursor-pointer group">
               <input type="checkbox" className="mt-1 size-5 rounded border-slate-200 text-[#137FEC] focus:ring-[#137FEC]" required />
               <p className="text-slate-500 text-xs leading-relaxed">
-                Concordo com os <a className="text-[#137FEC] font-bold hover:underline" href="#">Termos de Serviço</a> e <a className="text-[#137FEC] font-bold hover:underline" href="#">Política de Privacidade</a>.
+                {t('i_agree')} <a className="text-[#137FEC] font-bold hover:underline" href="#">{t('terms_service')}</a> e <a className="text-[#137FEC] font-bold hover:underline" href="#">{t('privacy_policy')}</a>.
               </p>
             </label>
             
             <Button type="submit" className="mt-4 shadow-lg shadow-blue-500/20" isLoading={loading} disabled={loading}>
-              Criar Conta
+              {t('create_account')}
             </Button>
           </form>
 
           <p className="text-center text-slate-500 text-sm">
-            Já tem uma conta? <Link to="/login" className="text-[#137FEC] font-bold hover:underline">Entrar</Link>
+            {t('already_have_account')} <Link to="/login" className="text-[#137FEC] font-bold hover:underline">{t('login_action')}</Link>
           </p>
         </div>
     </AuthLayout>

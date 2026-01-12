@@ -6,6 +6,7 @@ import { PaymentDetails, PAYMENT_METHODS } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
+import { useLanguage } from '../components/LanguageContext';
 
 interface PaymentConfirmProps {
   details: PaymentDetails;
@@ -13,6 +14,7 @@ interface PaymentConfirmProps {
 }
 
 const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const method = details.paymentMethod ? PAYMENT_METHODS[details.paymentMethod] : null;
 
@@ -45,9 +47,9 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
               <span className="material-symbols-outlined text-4xl text-[#137FEC]">verified_user</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Confirmar Detalhes</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('confirm_details')}</h1>
             <p className="mt-2 text-sm text-slate-500 leading-relaxed font-medium">
-              Verifique as informações antes de confirmar o pagamento.
+              {t('check_info_before')}
             </p>
           </div>
           
@@ -59,14 +61,14 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
                     <span className="material-symbols-outlined">{method?.icon}</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Método de Pagamento</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('payment_method')}</p>
                     <p className="font-black text-slate-800 text-lg">{method?.name}</p>
                  </div>
               </div>
 
               {isMobileMoney ? (
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Número de Telefone</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('phone_number')}</span>
                   <div className="mt-1 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">contact_phone</span>
                     <span className="font-mono text-xl font-black text-slate-900 tracking-[0.2em]">+258 {details.phoneNumber}</span>
@@ -75,7 +77,7 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
               ) : (
                 <>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Entidade</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('entity')}</span>
                     <div className="mt-1 flex items-center gap-3">
                       <span className="material-symbols-outlined text-slate-400">corporate_fare</span>
                       <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.entity}</span>
@@ -83,7 +85,7 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
                   </div>
                   
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Referência</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('reference')}</span>
                     <div className="mt-1 flex items-center gap-3">
                       <span className="material-symbols-outlined text-slate-400">qr_code</span>
                       <span className="font-mono text-xl font-black text-slate-900 tracking-widest">{details.reference}</span>
@@ -94,7 +96,7 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
               
               <div className="flex items-center justify-between pt-6 border-t border-slate-200 border-dashed">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Valor Total</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('total_amount')}</span>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-3xl font-black text-slate-900 tracking-tighter">{details.amount}</span>
                     <span className="text-lg font-bold text-slate-400">MZN</span>
@@ -110,13 +112,13 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
                 disabled={isConfirming}
                 className="w-full py-5 rounded-2xl gap-2 shadow-xl shadow-blue-500/20 font-black uppercase tracking-widest group"
             >
-                {isConfirming ? 'A Processar...' : 'Confirmar e Finalizar'}
+                {isConfirming ? t('processing') : t('confirm_and_finish')}
                 {!isConfirming && <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>}
             </Button>
             
             <Link to="/pay" className="w-full">
                 <Button variant="ghost" fullWidth className="text-slate-400 font-bold uppercase text-xs tracking-widest hover:text-slate-900">
-                   Editar informações
+                   {t('edit_information')}
                 </Button>
             </Link>
           </div>
@@ -124,11 +126,10 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
       </main>
       
       <footer className="w-full py-8 text-center text-sm text-slate-400 font-medium">
-        <p>© 2026 EduPay. Todos os direitos reservados.</p>
+        <p>© 2026 EduPay. {t('all_rights_reserved')}</p>
       </footer>
     </div>
   );
 };
 
-export default PaymentConfirm;
 

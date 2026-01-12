@@ -7,6 +7,7 @@ import Logo from './Logo';
 import { supabase } from '../supabaseClient';
 
 import { User } from '../types';
+import { useLanguage } from './LanguageContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -35,9 +36,9 @@ const getMenuItems = (role?: string) => {
 
   // Default Student Menu
   return [
-    { name: 'Dia-a-Dia', icon: 'home', path: '/dashboard' },
-    { name: 'Pagar', icon: 'payments', path: '/pay' },
-    { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
+    { name: 'menu_home', icon: 'home', path: '/dashboard' },
+    { name: 'menu_pay', icon: 'payments', path: '/pay' },
+    { name: 'menu_finance', icon: 'settings', path: '/configuracoes' },
   ];
 };
 
@@ -47,6 +48,7 @@ interface NavLinkProps {
 }
 
 const NavLink: React.FC<NavLinkProps> = ({ item, onClick }) => {
+  const { t } = useLanguage();
   const location = useLocation();
   const isActive = location.pathname === item.path;
   return (
@@ -62,12 +64,13 @@ const NavLink: React.FC<NavLinkProps> = ({ item, onClick }) => {
       <span className={`material-symbols-outlined text-[22px] ${isActive ? 'fill-1' : ''}`}>
         {item.icon}
       </span>
-      <span className="text-sm font-bold">{item.name}</span>
+      <span className="text-sm font-bold">{t(item.name as any)}</span>
     </Link>
   );
 };
 
 const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
+  const { t, language, setLanguage } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -104,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-red-500 hover:bg-red-50 transition-all group font-bold text-sm"
             >
               <span className="material-symbols-outlined text-[22px] transition-transform group-hover:-translate-x-1">logout</span>
-              <span>Encerrar Sessão</span>
+              <span>{t('logout')}</span>
             </button>
           </div>
         </nav>
@@ -155,17 +158,27 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
                 </Link>
               </li>
               <li><span className="text-slate-300">/</span></li>
-              <li><span className="font-bold text-slate-900 tracking-tight uppercase text-xs">{title || 'Dashboard'}</span></li>
+              <li><span className="font-bold text-slate-900 tracking-tight uppercase text-xs">{t(title as any || 'dashboard')}</span></li>
             </ol>
           </nav>
 
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 ml-auto">
+            {/* Language Toggle */}
+            <button 
+              onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+              className="size-10 flex items-center justify-center rounded-xl bg-slate-100 text-[#137FEC] hover:bg-blue-50 transition-colors"
+              title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+            >
+              <span className="material-symbols-outlined">translate</span>
+              <span className="text-[10px] font-black ml-0.5 uppercase">{language}</span>
+            </button>
+
             {user && (
-              <div className="hidden sm:flex flex-col text-right">
+              <div className="hidden sm:flex flex-col text-right ml-2">
                 <span className="text-xs font-black text-slate-900 tracking-tight">{user.name.toUpperCase()}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                  {user.role === 'admin_financeiro' ? 'Administração Financeira' : 
-                   user.role === 'direcao' ? 'Direção Geral' : 'Estudante'}
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">
+                  {user.role === 'admin_financeiro' ? t('role_finance') : 
+                   user.role === 'direcao' ? t('role_direction') : t('role_student')}
                 </span>
               </div>
             )}
@@ -213,8 +226,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
       <Modal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
-        title="Deseja sair?"
-        description="Sua sessão atual será encerrada e você precisará se autenticar novamente."
+        title={t('logout_title')}
+        description={t('logout_desc')}
         icon="logout"
         iconColor="text-red-500 bg-red-50"
       >
@@ -223,13 +236,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
               onClick={handleLogout}
               className="w-full rounded-2xl bg-red-500 py-4.5 text-sm font-bold text-white shadow-xl shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
             >
-              Confirmar saída
+              {t('logout_confirm')}
             </button>
             <button 
               onClick={() => setShowLogoutModal(false)}
               className="w-full rounded-2xl bg-slate-100 py-4.5 text-sm font-bold text-slate-600 hover:bg-slate-200 active:scale-[0.98] transition-all"
             >
-              Manter conectado
+              {t('logout_cancel')}
             </button>
           </div>
       </Modal>

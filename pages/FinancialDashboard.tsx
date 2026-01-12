@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Modal from '../components/Modal';
+import { useLanguage } from '../components/LanguageContext';
 import { User, PAYMENT_METHODS, PaymentMethodType } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -12,6 +13,7 @@ interface FinancialDashboardProps {
 }
 
 const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'charges' | 'payments' | 'reports' | 'create_charge'>('overview');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -238,7 +240,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
   if (isLoading) {
     return (
-      <Layout user={user} title="Finanças">
+      <Layout user={user} title={t('finances') as any}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#137FEC]"></div>
         </div>
@@ -247,15 +249,15 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   }
 
   return (
-    <Layout user={user} title="Administração Financeira">
+    <Layout user={user} title={t('financial_admin') as any}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-          {activeTab === 'create_charge' ? 'Gerar Cobrança' : 'Dashboard'}
+          {activeTab === 'create_charge' ? t('generate_charge') : t('dashboard')}
         </h1>
         {activeTab !== 'create_charge' && (
           <Button onClick={() => setActiveTab('create_charge')} className="flex items-center gap-2">
             <span className="material-symbols-outlined text-sm">add</span>
-            Gerar Cobrança
+            {t('generate_charge')}
           </Button>
         )}
       </div>
@@ -266,13 +268,13 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             <div className="lg:col-span-7">
               <Card className="p-8 rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight">EduPay Financeiro</h1>
-                  <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Seleccionar Estudantes</h3>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight">EduPay {t('menu_finance')}</h1>
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">{t('select_students')}</h3>
                   <div className="relative w-full sm:w-64">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                     <input 
                       type="text" 
-                      placeholder="Buscar por nome..." 
+                      placeholder={t('search_placeholder')} 
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-11 pr-4 text-xs font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -293,7 +295,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                               onChange={handleSelectAll}
                             />
                           </th>
-                          <th className="py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Estudante</th>
+                          <th className="py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('student')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
@@ -324,9 +326,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                 
                 <div className="mt-6 flex items-center justify-between px-2">
                    <p className="text-xs font-bold text-slate-400">
-                     <span className="text-[#137FEC] font-black">{selectedStudentIds.length}</span> estudantes seleccionados
+                     <span className="text-[#137FEC] font-black">{selectedStudentIds.length}</span> {t('students_selected')}
                    </p>
-                   <button onClick={() => setSelectedStudentIds([])} className="text-[10px] font-black uppercase text-red-500 hover:underline tracking-widest">Limpar Selecção</button>
+                   <button onClick={() => setSelectedStudentIds([])} className="text-[10px] font-black uppercase text-red-500 hover:underline tracking-widest">{t('clear_selection')}</button>
                 </div>
               </Card>
             </div>
@@ -337,12 +339,12 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                    <div className="size-12 rounded-2xl bg-blue-50 text-[#137FEC] flex items-center justify-center">
                       <span className="material-symbols-outlined text-2xl font-black">receipt_long</span>
                    </div>
-                   <h3 className="text-xl font-black text-slate-800">Detalhes da Cobrança</h3>
+                   <h3 className="text-xl font-black text-slate-800">{t('charge_details')}</h3>
                 </div>
 
-                <div className="space-y-6 flex-1">
+                 <div className="space-y-6 flex-1">
                   <Input 
-                    label="Descrição" 
+                    label={t('description')} 
                     placeholder="Ex: Propina de Janeiro 2026" 
                     className="bg-slate-50 border-slate-100 py-4 rounded-xl"
                     value={formData.description}
@@ -350,7 +352,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   />
                   
                   <Input 
-                    label="Montante (MZN)" 
+                    label={t('amount')} 
                     type="number" 
                     placeholder="2500.00" 
                     className="bg-slate-50 border-slate-100 py-4 rounded-xl text-xl font-black"
@@ -359,7 +361,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   />
                   
                   <Input 
-                    label="Data de Vencimento" 
+                    label={t('due_date_label')} 
                     type="date" 
                     className="bg-slate-50 border-slate-100 py-4 rounded-xl"
                     value={formData.due_date}
@@ -373,7 +375,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                     className="py-5 text-base font-black rounded-xl shadow-xl shadow-blue-500/10"
                     onClick={handleCreateCharge}
                   >
-                    Confirmar Cobranças
+                    {t('confirm_charges')}
                   </Button>
                   <Button 
                     variant="secondary" 
@@ -381,7 +383,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                     className="py-5 text-base font-black rounded-xl"
                     onClick={() => setActiveTab('overview')}
                   >
-                    Cancelar
+                    {t('cancel')}
                   </Button>
                 </div>
               </Card>
@@ -395,9 +397,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                <div className="size-12 rounded-xl bg-[#27AE60] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">payments</span>
                </div>
-               <div>
+                <div>
                   <p className="text-2xl font-black text-[#27AE60] leading-tight">{formatCurrency(stats.receitasMes)}</p>
-                  <p className="text-[11px] text-[#27AE60] font-black uppercase tracking-wider mt-0.5">Receitas</p>
+                  <p className="text-[11px] text-[#27AE60] font-black uppercase tracking-wider mt-0.5">{t('revenue')}</p>
                </div>
             </div>
 
@@ -407,7 +409,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
                <div>
                   <p className="text-2xl font-black text-[#137FEC] leading-tight">{stats.cobrancasPendentes}</p>
-                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">Pendentes</p>
+                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">{t('pending')}</p>
                </div>
             </div>
 
@@ -417,7 +419,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
                <div>
                   <p className="text-2xl font-black text-[#F2994A] leading-tight">{stats.alunosInadimplentes}</p>
-                  <p className="text-[11px] text-[#F2994A] font-black uppercase tracking-wider mt-0.5">Em Atraso</p>
+                  <p className="text-[11px] text-[#F2994A] font-black uppercase tracking-wider mt-0.5">{t('overdue')}</p>
                </div>
             </div>
 
@@ -427,7 +429,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
                <div>
                   <p className="text-2xl font-black text-[#EB5757] leading-tight">{stats.pagamentosHoje}</p>
-                  <p className="text-[11px] text-[#EB5757] font-black uppercase tracking-wider mt-0.5">Transacções Hoje</p>
+                  <p className="text-[11px] text-[#EB5757] font-black uppercase tracking-wider mt-0.5">{t('today_transactions')}</p>
                </div>
             </div>
 
@@ -437,7 +439,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
                <div>
                   <p className="text-2xl font-black text-[#2D9CDB] leading-tight">{formatCurrency(stats.valorPagamentosHoje)}</p>
-                  <p className="text-[11px] text-[#2D9CDB] font-black uppercase tracking-wider mt-0.5">Total Hoje</p>
+                  <p className="text-[11px] text-[#2D9CDB] font-black uppercase tracking-wider mt-0.5">{t('today_total')}</p>
                </div>
             </div>
           </div>
@@ -448,9 +450,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                 <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-50">
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[#EB5757] text-2xl font-black">warning</span>
-                    <h3 className="font-black text-slate-800 tracking-tight text-lg">Cobranças em Atraso</h3>
+                    <h3 className="font-black text-slate-800 tracking-tight text-lg">{t('overdue')}</h3>
                   </div>
-                  <button onClick={() => setActiveTab('charges')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">Ver todas</button>
+                  <button onClick={() => setActiveTab('charges')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">{t('view_all')}</button>
                 </div>
                 
                 <div className="py-14 flex flex-col items-center justify-center text-slate-400">
@@ -467,7 +469,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 ml-2">
                   <span className="material-symbols-outlined text-[#137FEC] text-2xl">history</span>
-                  <h3 className="font-black text-slate-800 tracking-tight text-lg">Transacções Recentes</h3>
+                  <h3 className="font-black text-slate-800 tracking-tight text-lg">{t('recent_transactions')}</h3>
                 </div>
                 
                 <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
@@ -492,7 +494,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                       </div>
                     ))
                   ) : (
-                    <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">Sem transacções recentes</div>
+                    <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">{t('no_recent_transactions')}</div>
                   )}
                 </div>
               </div>
@@ -500,14 +502,14 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
             <div className="lg:col-span-5">
               <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm h-full flex flex-col">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="font-black text-slate-800 tracking-tight text-lg leading-none">Histórico</h3>
-                  <button onClick={() => setActiveTab('payments')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">Ver histórico</button>
+                 <div className="flex items-center justify-between mb-8">
+                  <h3 className="font-black text-slate-800 tracking-tight text-lg leading-none">{t('history_title')}</h3>
+                  <button onClick={() => setActiveTab('payments')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">{t('view_history')}</button>
                 </div>
 
                 <div className="relative mb-8">
                   <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                  <input type="text" placeholder="Buscar transacção..." className="w-full bg-[#F8FAFC] border border-[#F1F5F9] rounded-2xl py-4.5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-900 placeholder:text-slate-400" />
+                  <input type="text" placeholder={t('search_transaction')} className="w-full bg-[#F8FAFC] border border-[#F1F5F9] rounded-2xl py-4.5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-900 placeholder:text-slate-400" />
                 </div>
 
                 <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -537,27 +539,27 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
         <div className="space-y-6 animate-in fade-in duration-500">
           <Card className="p-8 rounded-[2rem] border-slate-50 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-slate-900">Cobranças Ativas</h3>
+              <h3 className="text-xl font-black text-slate-900">{t('active_charges')}</h3>
               <Button onClick={() => setActiveTab('create_charge')} className="text-sm">
                 <span className="material-symbols-outlined text-lg mr-1">add</span>
-                Nova Cobrança
+                {t('new_charge')}
               </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Estudante</th>
-                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-                    <th className="text-right py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Vencimento</th>
-                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('student')}</th>
+                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('description')}</th>
+                    <th className="text-right py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('amount')}</th>
+                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('due_date_label')}</th>
+                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {dbCharges.map(charge => (
                     <tr key={charge.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{charge.profiles?.name || 'Estudante'}</td>
+                      <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{charge.profiles?.name || t('student')}</td>
                       <td className="py-5 px-4 text-slate-600 text-sm font-bold">{charge.description}</td>
                       <td className="py-5 px-4 text-right font-black text-slate-900 text-sm">{formatCurrency(charge.amount)} MZN</td>
                       <td className="py-5 px-4 text-center text-slate-600 font-bold text-sm tracking-tighter">{new Date(charge.due_date).toLocaleDateString()}</td>
@@ -565,7 +567,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           charge.status === 'paid' ? 'bg-[#EBFAF2] text-[#27AE60]' : 'bg-[#FFF9EB] text-[#F2994A]'
                         }`}>
-                          {charge.status === 'paid' ? 'Pago' : 'Pendente'}
+                          {charge.status === 'paid' ? t('paid') : t('pending')}
                         </span>
                       </td>
                     </tr>
@@ -578,16 +580,16 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       ) : activeTab === 'payments' ? (
         <div className="animate-in fade-in duration-500">
           <Card className="p-8 rounded-[2rem] border-slate-50 shadow-sm">
-            <h3 className="text-xl font-black text-slate-900 mb-8">Histórico de Transacções</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-8">{t('transaction_history')}</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Método</th>
-                    <th className="text-right py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('description')}</th>
+                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('method')}</th>
+                    <th className="text-right py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('amount')}</th>
+                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('status')}</th>
+                    <th className="text-center py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('date')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -614,14 +616,14 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       ) : activeTab === 'reports' ? (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-8 cursor-pointer hover:shadow-xl transition-all border-slate-50 hover:-translate-y-1 rounded-[2rem]" onClick={() => exportReport('pdf')}>
+             <Card className="p-8 cursor-pointer hover:shadow-xl transition-all border-slate-50 hover:-translate-y-1 rounded-[2rem]" onClick={() => exportReport('pdf')}>
               <div className="flex items-center gap-6">
                 <div className="size-16 bg-blue-50 rounded-[1.5rem] flex items-center justify-center">
                   <span className="material-symbols-outlined text-4xl text-blue-600 font-black">summarize</span>
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-lg">Fluxo de Caixa</h4>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Entradas e saídas</p>
+                  <h4 className="font-black text-slate-900 text-lg">{t('cash_flow')}</h4>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('cash_flow_desc')}</p>
                 </div>
               </div>
             </Card>
@@ -631,8 +633,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   <span className="material-symbols-outlined text-4xl text-orange-600 font-black">assignment_late</span>
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-lg">Inadimplência</h4>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Alunos em atraso</p>
+                  <h4 className="font-black text-slate-900 text-lg">{t('delinquency')}</h4>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('delinquency_desc')}</p>
                 </div>
               </div>
             </Card>
@@ -642,8 +644,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   <span className="material-symbols-outlined text-4xl text-green-600 font-black">table_chart</span>
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-lg">Exportar CSV</h4>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Download de dados</p>
+                  <h4 className="font-black text-slate-900 text-lg">{t('export_csv')}</h4>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('export_csv_desc')}</p>
                 </div>
               </div>
             </Card>
@@ -655,8 +657,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       {showPaymentModal && (
         <Modal 
           isOpen={showPaymentModal} 
-          onClose={() => { setShowPaymentModal(false); setSelectedPayment(null); }}
-          title="Registar Pagamento Manual"
+          onClose={() => setShowPaymentModal(false)}
+          title={t('register_manual_payment')}
         >
           <div className="space-y-4">
             {selectedPayment && (
@@ -672,7 +674,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             <Input label="Estudante" placeholder="Nome ou ID do estudante" />
             <Input label="Montante (MZN)" type="number" placeholder="0.00" />
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Método de Pagamento</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">{t('payment_method_label')}</label>
               <select className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#137FEC]">
                 {Object.values(PAYMENT_METHODS).map(method => (
                   <option key={method.code} value={method.code}>{method.name}</option>
@@ -682,7 +684,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             <Input label="Referência" placeholder="Número da referência" />
             <div className="flex gap-3 mt-6">
               <Button variant="secondary" fullWidth onClick={() => setShowPaymentModal(false)}>Cancelar</Button>
-              <Button fullWidth onClick={() => { alert('Pagamento registado!'); setShowPaymentModal(false); }}>Confirmar</Button>
+               <Button fullWidth onClick={() => { alert(t('payment_registered')); setShowPaymentModal(false); }}>{t('confirm_button')}</Button>
             </div>
           </div>
         </Modal>

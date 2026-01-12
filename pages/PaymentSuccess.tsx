@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { PaymentDetails, User, PAYMENT_METHODS } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import { useLanguage } from '../components/LanguageContext';
 
 interface PaymentSuccessProps {
   details: PaymentDetails;
@@ -12,26 +13,27 @@ interface PaymentSuccessProps {
 }
 
 const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const getCurrentMonthName = () => {
-    return new Intl.DateTimeFormat('pt-PT', { month: 'long' }).format(new Date());
+    return new Intl.DateTimeFormat(language === 'pt' ? 'pt-PT' : 'en-US', { month: 'long' }).format(new Date());
   };
 
   const getPaymentType = (entity: string) => {
     const mapping: Record<string, { label: string; icon: string; color: string }> = {
-      '21423': { label: 'Pagamento de Mensalidade', icon: 'school', color: 'text-blue-500' },
-      '21500': { label: 'Taxa de Exame', icon: 'edit_note', color: 'text-purple-500' },
-      '21600': { label: 'Material Didático', icon: 'menu_book', color: 'text-orange-500' },
+      '21423': { label: t('tuition_payment_label'), icon: 'school', color: 'text-blue-500' },
+      '21500': { label: t('exam_fee_label'), icon: 'edit_note', color: 'text-purple-500' },
+      '21600': { label: t('didactic_material_label'), icon: 'menu_book', color: 'text-orange-500' },
     };
-    return mapping[entity] || { label: 'Pagamento de Factura', icon: 'receipt', color: 'text-slate-500' };
+    return mapping[entity] || { label: t('invoice_payment_label'), icon: 'receipt', color: 'text-slate-500' };
   };
 
   const paymentInfo = getPaymentType(details.entity);
   const currentMonth = getCurrentMonthName();
   const studentName = user.name.split(' ')[0];
   const transactionId = `TXN${Date.now().toString().slice(-10)}`;
-  const currentDate = new Date().toLocaleString('pt-PT', { 
+  const currentDate = new Date().toLocaleString(language === 'pt' ? 'pt-PT' : 'en-US', { 
     day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
   });
 
@@ -47,7 +49,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Recibo - PayFlow</title>
+        <title>${t('receipt_title')}</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -126,56 +128,55 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
         <div class="receipt">
           <div class="header">
             <h1>PAYFLOW</h1>
-            <p>Comprovativo de Pagamento</p>
+            <p>${t('payment_receipt')}</p>
             <div class="success-badge">
-              ✓ Pagamento Confirmado
+              ✓ ${t('payment_confirmed')}
             </div>
           </div>
           
           <div class="content">
             <div class="amount">
-              <div class="amount-label">Montante Pago</div>
+              <div class="amount-label">${t('amount_paid')}</div>
               <div class="amount-value">
                 ${details.amount} <span class="amount-currency">MZN</span>
               </div>
             </div>
-            
-            <div class="details">
+                        <div class="details">
               <div class="detail-row">
-                <span class="detail-label">ID Transacção</span>
+                <span class="detail-label">${t('transaction_id')}</span>
                 <span class="detail-value">${transactionId}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Estudante</span>
+                <span class="detail-label">${t('student')}</span>
                 <span class="detail-value">${user.name}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Entidade</span>
+                <span class="detail-label">${t('entity')}</span>
                 <span class="detail-value">${details.entity}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Referência</span>
+                <span class="detail-label">${t('reference')}</span>
                 <span class="detail-value">${details.reference}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Tipo de Serviço</span>
+                <span class="detail-label">${t('service_type')}</span>
                 <span class="detail-value">${paymentInfo.label}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Método de Pagamento</span>
+                <span class="detail-label">${t('method')}</span>
                 <span class="detail-value">${paymentMethodName}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Data/Hora</span>
+                <span class="detail-label">${t('date')}</span>
                 <span class="detail-value">${currentDate}</span>
               </div>
             </div>
           </div>
           
           <div class="footer">
-            <p><strong>EduPay</strong> - Sistema de Pagamentos</p>
-            <p>Este documento serve como comprovativo oficial de pagamento.</p>
-            <p>Guarde este recibo para referência futura.</p>
+            <p><strong>EduPay</strong> - ${t('payment_method')}</p>
+            <p>${t('official_proof')}</p>
+            <p>${t('keep_receipt')}</p>
           </div>
         </div>
         
@@ -190,7 +191,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
             font-weight: 700;
             cursor: pointer;
           ">
-            Imprimir / Guardar como PDF
+            ${t('print_save_pdf')}
           </button>
         </div>
       </body>
@@ -234,12 +235,12 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
               </div>
 
               <h1 className="text-slate-900 tracking-tight text-3xl md:text-4xl font-black leading-tight pb-4">
-                Pagamento Concluído!
+                {t('payment_completed')}
               </h1>
               
               <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 md:p-6 mb-2">
                 <p className="text-slate-700 text-sm md:text-lg font-medium leading-relaxed">
-                  Olá <span className="text-blue-600 font-black">{studentName}</span>, o seu pagamento do mês de <span className="text-blue-600 font-black capitalize">{currentMonth}</span> foi processado com sucesso.
+                  {t('hello')} <span className="text-blue-600 font-black">{studentName}</span>, {t('payment_processed_success').replace('{month}', currentMonth)}
                 </p>
               </div>
             </div>
@@ -247,31 +248,31 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
             <div className="px-6 md:px-10 py-4">
               <div className="bg-slate-50/80 rounded-[2rem] p-6 md:p-8 border border-slate-100 space-y-5">
                 <div className="flex justify-between items-center border-b border-slate-200/50 pb-4 border-dashed last:border-0 last:pb-0">
-                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Referência</span>
+                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">{t('reference')}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-slate-900 text-sm md:text-base font-black font-mono tracking-wider tabular-nums">{details.reference}</span>
                     <button 
                       onClick={() => navigator.clipboard.writeText(details.reference)}
                       className="text-green-500 hover:text-green-600 transition-colors active:scale-90"
-                      title="Copiar referência"
+                      title={t('copy_reference')}
                     >
                       <span className="material-symbols-outlined text-[18px]">content_copy</span>
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-between items-center border-b border-slate-200/50 pb-4 border-dashed last:border-0 last:pb-0">
-                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Montante Pago</span>
+                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">{t('amount_paid')}</span>
                   <span className="text-slate-900 text-xl md:text-2xl font-black tabular-nums">{details.amount} <span className="text-sm text-slate-400">MZN</span></span>
                 </div>
                 <div className="flex justify-between items-center border-b border-slate-200/50 pb-4 border-dashed last:border-0 last:pb-0">
-                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Método</span>
+                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">{t('method')}</span>
                   <span className="text-slate-900 text-xs md:text-sm font-bold">
                     {details.paymentMethod ? PAYMENT_METHODS[details.paymentMethod]?.name || details.paymentMethod : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Data & Hora</span>
-                  <span className="text-slate-900 text-xs md:text-sm font-bold uppercase">{new Date().toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest">{t('date')}</span>
+                  <span className="text-slate-900 text-xs md:text-sm font-bold uppercase">{new Date().toLocaleString(language === 'pt' ? 'pt-PT' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
             </div>
@@ -282,7 +283,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
                 className="bg-slate-900 hover:bg-black text-white h-14 md:h-16 shadow-xl shadow-slate-900/20"
                 fullWidth
               >
-                Voltar ao Início
+                {t('back_to_home')}
               </Button>
               <Button 
                 onClick={downloadReceipt}
@@ -291,7 +292,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
                 icon={<span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-y-0.5">download</span>}
                 fullWidth
               >
-                 Recibo PDF
+                 {t('receipt_pdf')}
               </Button>
             </div>
           </Card>
