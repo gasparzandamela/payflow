@@ -266,6 +266,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             <div className="lg:col-span-7">
               <Card className="p-8 rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight">EduPay Financeiro</h1>
                   <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Seleccionar Estudantes</h3>
                   <div className="relative w-full sm:w-64">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>

@@ -173,7 +173,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ details, user }) => {
           </div>
           
           <div class="footer">
-            <p><strong>PayFlow</strong> - Sistema de Pagamentos</p>
+            <p><strong>EduPay</strong> - Sistema de Pagamentos</p>
             <p>Este documento serve como comprovativo oficial de pagamento.</p>
             <p>Guarde este recibo para referência futura.</p>
           </div>

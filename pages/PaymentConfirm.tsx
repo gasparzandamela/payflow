@@ -124,7 +124,7 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
       </main>
       
       <footer className="w-full py-8 text-center text-sm text-slate-400 font-medium">
-        <p>© 2026 PayFlow. Todos os direitos reservados.</p>
+        <p>© 2026 EduPay. Todos os direitos reservados.</p>
       </footer>
     </div>
   );

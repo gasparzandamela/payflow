@@ -91,7 +91,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             
             <div className="text-center lg:text-left">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bem-vindo de volta</h1>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Bem-vindo ao EduPay</h1>
               <p className="mt-2 text-slate-500">Por favor, insira seus dados para entrar.</p>
             </div>
   

@@ -1,5 +1,5 @@
-
 {
-  "name": "PayFlow - Sistema de Pagamentos",
+  "name": "EduPay",
+  "template": "EduPay Payment System",
   "description": "Uma plataforma moderna para gerenciamento de pagamentos educacionais e mensalidades, com fluxos intuitivos de cadastro, dashboard e liquidação de faturas."
 }

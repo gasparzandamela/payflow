@@ -61,15 +61,21 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                 
                 <div className="flex flex-col items-center text-center gap-2">
                   <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${method.color}15` }}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 overflow-hidden"
+                    style={{ backgroundColor: isSelected ? 'transparent' : `${method.color}15` }}
                   >
-                    <span 
-                      className="material-symbols-outlined text-2xl"
-                      style={{ color: method.color }}
-                    >
-                      {method.icon}
-                    </span>
+                    {methodCode === 'MPESA' ? (
+                      <img src="/image/mpesa.png" alt="M-Pesa" className="w-full h-full object-contain p-1" />
+                    ) : methodCode === 'EMOLA' ? (
+                      <img src="/image/emola.png" alt="e-Mola" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <span 
+                        className="material-symbols-outlined text-2xl"
+                        style={{ color: method.color }}
+                      >
+                        {method.icon}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <p className="font-bold text-slate-800 text-sm">{method.name}</p>

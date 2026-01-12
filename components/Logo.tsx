@@ -32,7 +32,7 @@ const Logo: React.FC<LogoProps> = ({ variant = 'full', size = 'md', className = 
       </div>
       {variant === 'full' && (
         <span className={`font-black tracking-tighter uppercase ${sizeClasses[size]} ${textColor}`}>
-          PayFlow
+          EduPay
         </span>
       )}
     </Link>

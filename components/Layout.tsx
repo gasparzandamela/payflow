@@ -144,7 +144,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
             >
               <span className="material-symbols-outlined">menu</span>
             </button>
-            <span className="font-black text-slate-900 tracking-tight text-lg">PayFlow</span>
+            <span className="font-black text-slate-900 tracking-tight text-lg">EduPay</span>
           </div>
 
           <nav aria-label="Breadcrumb" className="hidden lg:flex">

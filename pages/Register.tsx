@@ -82,7 +82,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             Segurança bancária para seus pagamentos
           </h2>
           <p className="text-slate-500 text-lg font-normal">
-            Junte-se a milhões de usuários que confiam no PayFlow para suas transações financeiras.
+            Junte-se a milhões de usuários que confiam no EduPay para suas transações financeiras.
           </p>
         </div>
         
