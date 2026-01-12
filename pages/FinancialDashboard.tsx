@@ -309,9 +309,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                             <td className="py-4 px-4">
                               <div className="flex items-center gap-3">
                                 <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-500">
-                                  {student.name.charAt(0)}
+                                  {(student.name || '?').charAt(0)}
                                 </div>
-                                <span className="font-bold text-slate-800 text-sm">{student.name}</span>
+                                <span className="font-bold text-slate-800 text-sm">{student.name || 'Sem nome'}</span>
                               </div>
                             </td>
                           </tr>
