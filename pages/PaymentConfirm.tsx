@@ -132,4 +132,6 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
   );
 };
 
+export default PaymentConfirm;
+
 
