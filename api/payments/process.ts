@@ -86,7 +86,7 @@ async function handler(request: Request) {
       'Prefer': 'return=representation'
     },
     body: JSON.stringify({
-      user_id: userId, // explicitly providing it just in case
+      charge_id: chargeId || null,
       entity: entity || null,
       reference: reference || null,
       amount: numericAmount,
@@ -113,21 +113,26 @@ async function handler(request: Request) {
   }
 
   // 5. If it's a tuition payment, mark the charge as paid
-  if (chargeId) {
-    const updateRes = await fetch(`${supabaseUrl}/rest/v1/charges?id=eq.${chargeId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ status: 'paid' })
-    });
+  if (chargeId && chargeId !== 'undefined' && chargeId !== 'null') {
+    try {
+      const updateRes = await fetch(`${supabaseUrl}/rest/v1/charges?id=eq.${chargeId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ status: 'paid' })
+      });
 
-    if (!updateRes.ok) {
-        console.error('Failed to update charge status:', await updateRes.text());
-        // We don't necessarily want to fail the whole payment if just the charge status update fails,
-        // but it's important to log it.
+      if (!updateRes.ok) {
+          const errorText = await updateRes.text();
+          console.error(`Failed to update charge ${chargeId}:`, errorText);
+      } else {
+          console.log(`Successfully marked charge ${chargeId} as paid`);
+      }
+    } catch (err) {
+      console.error('Exception during charge update:', err);
     }
   }
 
