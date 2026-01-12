@@ -103,20 +103,7 @@ const App: React.FC = () => {
         throw new Error(result.message || result.error || 'Erro ao processar pagamento');
       }
 
-      // 2. Registar transação na BD (Apenas se a API não retornar os dados completos ou por redundância)
-      // Nota: No nosso caso, a API /api/payments/process já insere. 
-      // Mas vamos garantir que o status da cobrança é actualizado e o histórico reflecte a mudança.
-      
-      // 3. Se vier de uma cobrança, marcar como paga
-      if (details.chargeId) {
-        const { error: chargeError } = await supabase
-          .from('charges')
-          .update({ status: 'paid' })
-          .eq('id', details.chargeId);
-        
-        if (chargeError) console.error('Error updating charge status:', chargeError);
-      }
-
+      // 2. Refresh local state
       await fetchTransactions();
       return true; // Return success
     } catch (err: any) {

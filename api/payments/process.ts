@@ -112,6 +112,25 @@ async function handler(request: Request) {
     });
   }
 
+  // 5. If it's a tuition payment, mark the charge as paid
+  if (chargeId) {
+    const updateRes = await fetch(`${supabaseUrl}/rest/v1/charges?id=eq.${chargeId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ status: 'paid' })
+    });
+
+    if (!updateRes.ok) {
+        console.error('Failed to update charge status:', await updateRes.text());
+        // We don't necessarily want to fail the whole payment if just the charge status update fails,
+        // but it's important to log it.
+    }
+  }
+
   return new Response(JSON.stringify({ 
     message: 'Pagamento processado com sucesso', 
     data: Array.isArray(resultData) ? resultData[0] : resultData 
