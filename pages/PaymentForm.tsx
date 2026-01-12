@@ -158,7 +158,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) =>
                           <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Número de Telefone</label>
                           <Input 
                             type="tel" 
-                            placeholder="84 000 0000" 
+                            placeholder="" 
                             value={formData.phoneNumber} 
                             onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                             error={errors.phoneNumber}

@@ -24,6 +24,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     due_date: ''
   });
   const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Real Data States
   const [stats, setStats] = useState({
@@ -62,7 +64,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Recent Transactions
       const { data: txs, error: txError } = await supabase
         .from('transactions')
         .select('*')
@@ -72,7 +73,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       if (txError) throw txError;
       setRecentTransactions(txs || []);
 
-      // 2. Fetch Real Stats
       const { data: allSuccessfulTxs } = await supabase
         .from('transactions')
         .select('amount')
@@ -85,12 +85,10 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
         .select('amount, status, due_date');
       
       const cobrancasPendentes = charges?.filter(c => c.status === 'pending').length || 0;
-      const totalPendentes = charges?.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
       
       const now = new Date();
       const inadimplentes = charges?.filter(c => c.status === 'pending' && new Date(c.due_date) < now).length || 0;
 
-      // 3. Transactions Stats
       const firstDayMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
@@ -127,28 +125,50 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     }
   };
 
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleStudentSelection = (id: string) => {
+    setSelectedStudentIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(filteredStudents.map(s => s.id));
+    }
+  };
+
   const handleCreateCharge = async () => {
-    if (!formData.student_id || !formData.amount || !formData.due_date) {
-      alert('Preencha todos os campos obrigatórios');
+    if (selectedStudentIds.length === 0 || !formData.amount || !formData.due_date) {
+      alert('Preencha todos os campos obrigatórios e seleccione pelo menos um estudante.');
       return;
     }
 
     try {
-      const { error } = await supabase.from('charges').insert([{
-        student_id: formData.student_id,
+      const chargesToInsert = selectedStudentIds.map(studentId => ({
+        student_id: studentId,
         description: formData.description || 'Propina Mensal',
         amount: parseFloat(formData.amount),
         due_date: formData.due_date,
-        created_by: user.id
-      }]);
+        created_by: user.id,
+        status: 'pending'
+      }));
+
+      const { error } = await supabase.from('charges').insert(chargesToInsert);
 
       if (error) throw error;
       
       setFormData({ student_id: '', description: '', amount: '', due_date: '' });
+      setSelectedStudentIds([]);
       setActiveTab('charges');
       fetchDashboardData();
       fetchChargesList();
-      alert('Cobrança gerada com sucesso!');
+      alert(`Cobranças geradas com sucesso para ${selectedStudentIds.length} estudantes!`);
     } catch (err: any) {
       alert('Erro ao gerar cobrança: ' + err.message);
     }
@@ -161,15 +181,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     }).format(value);
   };
 
-  // Exportar relatório
   const exportReport = (format: 'pdf' | 'csv') => {
-    const data = {
-      title: 'Relatório Financeiro',
-      date: new Date().toLocaleDateString('pt-PT'),
-      stats: stats,
-      transactions: recentTransactions
-    };
-
     if (format === 'csv') {
       const csvContent = [
         'Descrição,Montante,Método,Status,Data',
@@ -185,7 +197,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       a.download = `relatorio_financeiro_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
     } else {
-      // Para PDF, abrir nova janela com versão imprimível
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -249,77 +260,136 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
         )}
       </div>
 
-      {/* Conditionally Render Content based on activeTab */}
       {activeTab === 'create_charge' ? (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto py-12">
-          <Card className="p-10 shadow-xl border-slate-100 flex flex-col gap-8 rounded-[2.5rem]">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">Estudante</label>
-                <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-slate-900 appearance-none"
-                  value={formData.student_id}
-                  onChange={(e) => setFormData({...formData, student_id: e.target.value})}
-                >
-                  <option value="">Seleccione um estudante</option>
-                  {students.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <Input 
-                label="Descrição da Cobrança" 
-                placeholder="Ex: Propina de Janeiro 2026" 
-                className="bg-slate-50 border-slate-200 py-5 rounded-2xl"
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input 
-                  label="Montante (MZN)" 
-                  type="number" 
-                  placeholder="0.00" 
-                  className="bg-slate-50 border-slate-200 py-5 rounded-2xl"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7">
+              <Card className="p-8 rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Seleccionar Estudantes</h3>
+                  <div className="relative w-full sm:w-64">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                    <input 
+                      type="text" 
+                      placeholder="Buscar por nome..." 
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-11 pr-4 text-xs font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-hidden border border-slate-50 rounded-2xl">
+                  <div className="overflow-y-auto max-h-[400px] custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                        <tr className="border-b border-slate-50">
+                          <th className="py-4 px-6 w-12">
+                            <input 
+                              type="checkbox" 
+                              className="size-5 rounded-lg border-2 border-slate-200 text-[#137FEC] focus:ring-offset-0 focus:ring-0 cursor-pointer"
+                              checked={selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0}
+                              onChange={handleSelectAll}
+                            />
+                          </th>
+                          <th className="py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Estudante</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredStudents.map(student => (
+                          <tr key={student.id} className={`hover:bg-slate-50 transition-colors cursor-pointer ${selectedStudentIds.includes(student.id) ? 'bg-blue-50/30' : ''}`} onClick={() => toggleStudentSelection(student.id)}>
+                            <td className="py-4 px-6">
+                              <input 
+                                type="checkbox" 
+                                className="size-5 rounded-lg border-2 border-slate-100 text-[#137FEC] focus:ring-offset-0 focus:ring-0 cursor-pointer"
+                                checked={selectedStudentIds.includes(student.id)}
+                                readOnly
+                              />
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-500">
+                                  {student.name.charAt(0)}
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{student.name}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
                 
-                <Input 
-                  label="Data de Vencimento" 
-                  type="date" 
-                  className="bg-slate-50 border-slate-200 py-5 rounded-2xl"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                />
-              </div>
+                <div className="mt-6 flex items-center justify-between px-2">
+                   <p className="text-xs font-bold text-slate-400">
+                     <span className="text-[#137FEC] font-black">{selectedStudentIds.length}</span> estudantes seleccionados
+                   </p>
+                   <button onClick={() => setSelectedStudentIds([])} className="text-[10px] font-black uppercase text-red-500 hover:underline tracking-widest">Limpar Selecção</button>
+                </div>
+              </Card>
             </div>
 
-            <div className="flex gap-4 mt-4 pt-8 border-t border-slate-50">
-              <Button 
-                variant="secondary" 
-                fullWidth 
-                className="py-5 text-base font-black rounded-2xl"
-                onClick={() => setActiveTab('overview')}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                fullWidth 
-                className="py-5 text-base font-black rounded-2xl shadow-lg shadow-blue-200"
-                onClick={handleCreateCharge}
-              >
-                Confirmar Cobrança
-              </Button>
+            <div className="lg:col-span-5">
+              <Card className="p-8 rounded-[2rem] border-slate-100 shadow-xl space-y-8 h-full flex flex-col">
+                <div className="flex items-center gap-4">
+                   <div className="size-12 rounded-2xl bg-blue-50 text-[#137FEC] flex items-center justify-center">
+                      <span className="material-symbols-outlined text-2xl font-black">receipt_long</span>
+                   </div>
+                   <h3 className="text-xl font-black text-slate-800">Detalhes da Cobrança</h3>
+                </div>
+
+                <div className="space-y-6 flex-1">
+                  <Input 
+                    label="Descrição" 
+                    placeholder="Ex: Propina de Janeiro 2026" 
+                    className="bg-slate-50 border-slate-100 py-4 rounded-xl"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  />
+                  
+                  <Input 
+                    label="Montante (MZN)" 
+                    type="number" 
+                    placeholder="2500.00" 
+                    className="bg-slate-50 border-slate-100 py-4 rounded-xl text-xl font-black"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  />
+                  
+                  <Input 
+                    label="Data de Vencimento" 
+                    type="date" 
+                    className="bg-slate-50 border-slate-100 py-4 rounded-xl"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 pt-6 border-t border-slate-50">
+                  <Button 
+                    fullWidth 
+                    className="py-5 text-base font-black rounded-xl shadow-xl shadow-blue-500/10"
+                    onClick={handleCreateCharge}
+                  >
+                    Confirmar Cobranças
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    fullWidth 
+                    className="py-5 text-base font-black rounded-xl"
+                    onClick={() => setActiveTab('overview')}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </Card>
             </div>
-          </Card>
+          </div>
         </div>
       ) : activeTab === 'overview' ? (
         <>
-          {/* Stats Grid - 5 Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 pulse-animation">
-            {/* Receitas do Mês */}
             <div className="bg-[#EBFAF2] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
                <div className="size-12 rounded-xl bg-[#27AE60] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">payments</span>
@@ -330,7 +400,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
             </div>
 
-            {/* Cobranças Pendentes */}
             <div className="bg-[#EBF5FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
                <div className="size-12 rounded-xl bg-[#137FEC] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">schedule</span>
@@ -341,7 +410,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
             </div>
 
-            {/* Inadimplentes */}
             <div className="bg-[#FFF9EB] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
                <div className="size-12 rounded-xl bg-[#F2994A] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">warning</span>
@@ -374,7 +442,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            {/* Left Column (7/12) */}
             <div className="lg:col-span-7 space-y-8">
               <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
                 <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-50">
@@ -404,23 +471,25 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                 
                 <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
                   {recentTransactions.length > 0 ? (
-                    <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-5">
-                          <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
-                            <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-800 text-base tracking-tight leading-tight">{recentTransactions[0].description}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="size-1 rounded-full bg-slate-300"></span>
-                              <p className="text-xs text-slate-400 font-bold">{new Date(recentTransactions[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    recentTransactions.slice(0, 3).map((tx, idx) => (
+                      <div key={tx.id} className={`p-6 ${idx !== 0 ? 'mt-4 border-t border-slate-50' : ''}`}>
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-5">
+                              <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
+                                <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
+                              </div>
+                              <div>
+                                <p className="font-black text-slate-800 text-base tracking-tight leading-tight">{tx.description}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="size-1 rounded-full bg-slate-300"></span>
+                                  <p className="text-xs text-slate-400 font-bold">{new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+{formatCurrency(recentTransactions[0].amount)} MZN</p>
+                            <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+{formatCurrency(tx.amount)} MZN</p>
+                         </div>
                       </div>
-                    </div>
+                    ))
                   ) : (
                     <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">Sem transacções recentes</div>
                   )}
@@ -428,7 +497,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Right Column (5/12) */}
             <div className="lg:col-span-5">
               <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm h-full flex flex-col">
                 <div className="flex items-center justify-between mb-8">
@@ -623,4 +691,3 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 };
 
 export default FinancialDashboard;
-

@@ -132,8 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
           </div>
           <div className="mt-4">
             <div className="flex items-center justify-between text-[11px] md:text-xs mb-3">
-              <span className="text-slate-600 font-black uppercase tracking-wider">12ª Classe / Turma B</span>
-              <span className="text-slate-400 font-bold uppercase">Semestre 1</span>
+              <span className="text-slate-600 font-black uppercase tracking-wider">12ª Classe</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner">
               <div className="bg-green-500 h-3 rounded-full transition-all duration-1000" style={{ width: '100%' }}></div>
