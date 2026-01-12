@@ -24,15 +24,18 @@ async function handler(request: Request) {
     return new Response(JSON.stringify({ error: 'Body de requisição inválido' }), { status: 400 });
   }
 
-  const { entity, reference, amount } = body;
+  const { entity, reference, amount, paymentMethod } = body;
 
-  // 1. Validate Input
-  if (!entity || !reference || !amount) {
-    return new Response(JSON.stringify({ error: 'Campos obrigatórios em falta' }), { 
+  // 1. Validate Input - basic amount check
+  if (!amount) {
+    return new Response(JSON.stringify({ error: 'Montante em falta' }), { 
       status: 400,
       headers: { 'Content-Type': 'application/json' }
     });
   }
+
+  // For bank transfers, we still want these, but for mobile money they are optional
+  const isBank = entity && reference;
 
   // 2. Identify User via Cookie
   const cookieHeader = request.headers.get('cookie') || '';
@@ -84,10 +87,13 @@ async function handler(request: Request) {
     },
     body: JSON.stringify({
       user_id: userId, // explicitly providing it just in case
-      entity,
-      reference,
+      entity: entity || null,
+      reference: reference || null,
       amount: numericAmount,
-      description: `Pagamento de Mensalidade - Entidade ${entity}`,
+      payment_method: paymentMethod || (isBank ? 'BANK_TRANSFER' : 'Desconhecido'),
+      description: isBank 
+        ? `Pagamento de Mensalidade - Entidade ${entity}`
+        : `Pagamento via ${paymentMethod || 'Mobile Money'}`,
       status: 'Sucesso'
     })
   });

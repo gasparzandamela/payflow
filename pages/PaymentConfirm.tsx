@@ -16,9 +16,19 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
   const navigate = useNavigate();
   const method = details.paymentMethod ? PAYMENT_METHODS[details.paymentMethod] : null;
 
-  const handleConfirm = () => {
-    onConfirm();
-    navigate('/pay/success');
+  const [isConfirming, setIsConfirming] = React.useState(false);
+
+  const handleConfirm = async () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
+    try {
+      const success = await (onConfirm() as any);
+      if (success !== false) {
+        navigate('/pay/success');
+      }
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const isMobileMoney = details.paymentMethod === 'MPESA' || details.paymentMethod === 'EMOLA';
@@ -97,10 +107,11 @@ const PaymentConfirm: React.FC<PaymentConfirmProps> = ({ details, onConfirm }) =
           <div className="p-10 flex flex-col gap-4">
             <Button 
                 onClick={handleConfirm}
+                disabled={isConfirming}
                 className="w-full py-5 rounded-2xl gap-2 shadow-xl shadow-blue-500/20 font-black uppercase tracking-widest group"
             >
-                Confirmar e Finalizar
-                <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                {isConfirming ? 'A Processar...' : 'Confirmar e Finalizar'}
+                {!isConfirming && <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>}
             </Button>
             
             <Link to="/pay" className="w-full">

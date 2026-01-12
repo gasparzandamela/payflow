@@ -52,7 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, history }) => {
     if (user.id) {
       fetchCharges();
     }
-  }, [user.id]);
+  }, [user.id, history]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(val);
