@@ -33,10 +33,10 @@ const App: React.FC = () => {
         if (response.ok) {
           const u = await response.json();
           
-          // Buscar perfil do utilizador para obter o papel
+          // Buscar perfil do utilizador para obter o papel e metadados
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, avatar_url, pin')
             .eq('id', u.id)
             .single();
           
@@ -44,7 +44,9 @@ const App: React.FC = () => {
             id: u.id,
             name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
             email: u.email || '',
-            role: profile?.role || 'student'
+            role: profile?.role || 'student',
+            avatar_url: profile?.avatar_url,
+            pin: profile?.pin
           });
           
           // Fetch transactions after user is identified
