@@ -6,12 +6,11 @@ import Modal from './Modal';
 import Logo from './Logo';
 import { supabase } from '../supabaseClient';
 
+import { User } from '../types';
+
 interface LayoutProps {
   children: ReactNode;
-  user?: { 
-    name: string;
-    role?: string;
-  };
+  user?: User;
   title?: string;
 }
 
