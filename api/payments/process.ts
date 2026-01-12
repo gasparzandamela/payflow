@@ -24,7 +24,7 @@ async function handler(request: Request) {
     return new Response(JSON.stringify({ error: 'Body de requisição inválido' }), { status: 400 });
   }
 
-  const { entity, reference, amount, paymentMethod } = body;
+  const { entity, reference, amount, paymentMethod, chargeId } = body;
 
   // 1. Validate Input - basic amount check
   if (!amount) {
