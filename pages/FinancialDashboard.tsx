@@ -126,7 +126,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   };
 
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const toggleStudentSelection = (id: string) => {
