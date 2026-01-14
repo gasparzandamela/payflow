@@ -51,6 +51,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [chargeSearchTerm, setChargeSearchTerm] = useState('');
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
 
   // Real Data States
   const [stats, setStats] = useState({
@@ -715,7 +716,19 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       ) : activeTab === 'payments' ? (
         <div className="animate-in fade-in duration-500">
           <Card className="p-8 rounded-[2rem] border-slate-50 shadow-sm">
-            <h3 className="text-xl font-black text-slate-900 mb-8">{t('transaction_history')}</h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+              <h3 className="text-xl font-black text-slate-900">{t('transaction_history')}</h3>
+              <div className="relative w-full md:w-80">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-black">search</span>
+                <input 
+                  type="text" 
+                  placeholder="Pesquisar transação ou estudante..." 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 placeholder:text-slate-400"
+                  value={paymentSearchTerm}
+                  onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -731,6 +744,20 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                 <tbody className="divide-y divide-slate-50">
                   {(() => {
                     const filteredTxs = recentTransactions.filter(tx => {
+                      const student = students.find(s => s.id === tx.user_id);
+                      const studentName = student?.name || '';
+                      
+                      const dateObj = tx.created_at ? new Date(tx.created_at) : new Date();
+                      const mName = dateObj.toLocaleString('pt-MZ', { month: 'long' });
+                      const desc = `Pagamento da Mensalidade de ${mName.charAt(0).toUpperCase() + mName.slice(1)}`;
+
+                      const matchesSearch = 
+                        studentName.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+                        desc.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+                        (tx.payment_method || '').toLowerCase().includes(paymentSearchTerm.toLowerCase());
+
+                      if (!matchesSearch) return false;
+
                       if (activeFilter === 'today') {
                         const today = new Date().toISOString().split('T')[0];
                         return (tx.created_at || '').startsWith(today);
