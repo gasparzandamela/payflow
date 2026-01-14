@@ -27,9 +27,10 @@ const getMenuItems = (role?: string) => {
   
   if (role === 'direcao') {
     return [
-      { name: 'Direção', icon: 'monitoring', path: '/direcao' },
-      { name: 'Financeiro', icon: 'payments', path: '/direcao' },
-      { name: 'Académico', icon: 'school', path: '/direcao' },
+      { name: 'Direção', icon: 'monitoring', path: '/direcao?tab=overview' },
+      { name: 'Financeiro', icon: 'payments', path: '/direcao?tab=financial' },
+      { name: 'Académico', icon: 'school', path: '/direcao?tab=academic' },
+      { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
     ];
   }
 

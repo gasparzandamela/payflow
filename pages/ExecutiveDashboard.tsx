@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import { useSearchParams } from 'react-router-dom';
 import { User } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -10,14 +11,18 @@ interface ExecutiveDashboardProps {
 }
 
 const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'academic'>('overview');
+  const [searchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as 'overview' | 'financial' | 'academic') || 'overview';
+  
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalRevenue: 0,
     outstandingBalance: 0,
     enrollmentRate: 0,
-    recentPayments: 0
+    recentPayments: 0,
+    primaryCount: 0,
+    secondaryCount: 0
   });
   const [recentStudents, setRecentStudents] = useState<any[]>([]);
   const [topDebtors, setTopDebtors] = useState<any[]>([]);
@@ -38,12 +43,27 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
       const totalRevenue = txs?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
 
       // 2. Get Student Stats (Total Registered Profiles with role 'student')
-      const { count: studentCount } = await supabase
+      // 4. Get Student Distribution
+      const { data: allStudents } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('grade')
         .eq('role', 'student');
 
-      // 3. Outstanding (Simplified mock logic or sum of pending txs)
+      let primaryCount = 0;
+      let secondaryCount = 0;
+
+      allStudents?.forEach(s => {
+        const gradeStr = s.grade?.toLowerCase() || '';
+        if (gradeStr.match(/(8|9|10|11|12)/)) {
+          secondaryCount++;
+        } else {
+          primaryCount++;
+        }
+      });
+
+      const studentCount = allStudents?.length || 0;
+
+      // 3. Outstanding (Sum of pending txs)
       const { data: pendingTxs } = await supabase
         .from('transactions')
         .select('amount')
@@ -52,11 +72,13 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
       const outstandingBalance = pendingTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
 
       setStats({
-        totalStudents: studentCount || 0,
+        totalStudents: studentCount,
         totalRevenue,
         outstandingBalance,
         enrollmentRate: 94, // Mock rate
-        recentPayments: txs?.length || 0
+        recentPayments: txs?.length || 0,
+        primaryCount,
+        secondaryCount
       });
 
       // 4. Get Detailed lists based on context
@@ -97,34 +119,6 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
   return (
     <Layout user={user} title="Painel de Direção">
       <div className="flex flex-col gap-6">
-        {/* Header Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          <button 
-            onClick={() => setActiveTab('overview')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-              activeTab === 'overview' ? 'bg-[#137FEC] text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            Visão Geral
-          </button>
-          <button 
-            onClick={() => setActiveTab('financial')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-              activeTab === 'financial' ? 'bg-[#137FEC] text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            Análise Financeira
-          </button>
-          <button 
-            onClick={() => setActiveTab('academic')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-              activeTab === 'academic' ? 'bg-[#137FEC] text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            Visão Académica
-          </button>
-        </div>
-
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#137FEC]"></div>
@@ -156,13 +150,6 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
                     Requer cobrança
                   </div>
                 </Card>
-                <Card className="p-6">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Taxa de Matrícula</p>
-                  <p className="text-3xl font-black text-green-600 mt-2">{stats.enrollmentRate}%</p>
-                  <div className="mt-4 flex items-center text-xs text-green-600 font-bold">
-                    Metas atingidas
-                  </div>
-                </Card>
 
                 {/* Main Charts Placeholder Area */}
                 <Card className="lg:col-span-3 p-6 min-h-[300px]">
@@ -178,19 +165,19 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ user }) => {
                      <div>
                        <div className="flex justify-between text-xs font-bold mb-1">
                          <span>Primário</span>
-                         <span>45%</span>
+                         <span>{stats.totalStudents > 0 ? Math.round((stats.primaryCount / stats.totalStudents) * 100) : 0}%</span>
                        </div>
                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                         <div className="bg-blue-500 h-full w-[45%]"></div>
+                         <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${stats.totalStudents > 0 ? (stats.primaryCount / stats.totalStudents) * 100 : 0}%` }}></div>
                        </div>
                      </div>
                      <div>
                        <div className="flex justify-between text-xs font-bold mb-1">
                          <span>Secundário</span>
-                         <span>55%</span>
+                         <span>{stats.totalStudents > 0 ? Math.round((stats.secondaryCount / stats.totalStudents) * 100) : 0}%</span>
                        </div>
                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                         <div className="bg-green-500 h-full w-[55%]"></div>
+                         <div className="bg-green-500 h-full transition-all duration-500" style={{ width: `${stats.totalStudents > 0 ? (stats.secondaryCount / stats.totalStudents) * 100 : 0}%` }}></div>
                        </div>
                      </div>
                   </div>
