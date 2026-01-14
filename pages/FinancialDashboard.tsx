@@ -97,12 +97,9 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     try {
       const { data: txs, error: txError } = await supabase
         .from('transactions')
-        .select(`
-          *,
-          profiles:user_id (name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (txError) throw txError;
       setRecentTransactions(txs || []);
@@ -732,22 +729,37 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {recentTransactions
-                    .filter(tx => {
+                  {(() => {
+                    const filteredTxs = recentTransactions.filter(tx => {
                       if (activeFilter === 'today') {
                         const today = new Date().toISOString().split('T')[0];
-                        return tx.created_at.startsWith(today);
+                        return (tx.created_at || '').startsWith(today);
                       }
                       return true;
-                    })
-                    .map(tx => {
-                      const date = new Date(tx.created_at);
+                    });
+
+                    if (filteredTxs.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="py-20 text-center">
+                            <div className="flex flex-col items-center justify-center text-slate-400">
+                              <span className="material-symbols-outlined text-4xl mb-2 opacity-20">receipt_long</span>
+                              <p className="text-sm font-bold uppercase tracking-widest">{t('no_records')}</p>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filteredTxs.map(tx => {
+                      const date = tx.created_at ? new Date(tx.created_at) : new Date();
                       const monthName = date.toLocaleString('pt-MZ', { month: 'long' });
                       const formattedDescription = `Pagamento da Mensalidade de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+                      const student = students.find(s => s.id === tx.user_id);
                       
                       return (
                         <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{tx.profiles?.name || '---'}</td>
+                          <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{student?.name || '---'}</td>
                           <td className="py-5 px-4 text-slate-600 font-bold text-sm">{formattedDescription}</td>
                           <td className="py-5 px-4 text-slate-600 font-bold text-sm">{tx.payment_method}</td>
                           <td className="py-5 px-4 text-right font-black text-[#27AE60] text-sm">+{formatCurrency(tx.amount)} MZN</td>
@@ -761,7 +773,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                           <td className="py-5 px-4 text-center text-slate-500 font-bold text-sm tracking-tighter">{date.toLocaleString()}</td>
                         </tr>
                       );
-                    })}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
