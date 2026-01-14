@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -15,7 +16,21 @@ interface FinancialDashboardProps {
 const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'charges' | 'payments' | 'reports' | 'create_charge'>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
+  const [activeTab, setActiveTabInternal] = useState<'overview' | 'charges' | 'payments' | 'reports' | 'create_charge'>('overview');
+
+  // Sync state with URL param
+  useEffect(() => {
+    if (tabParam && ['overview', 'charges', 'payments', 'reports', 'create_charge'].includes(tabParam)) {
+      setActiveTabInternal(tabParam);
+    }
+  }, [tabParam]);
+
+  const setActiveTab = (tab: 'overview' | 'charges' | 'payments' | 'reports' | 'create_charge') => {
+    setSearchParams({ tab });
+    setActiveTabInternal(tab);
+  };
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   

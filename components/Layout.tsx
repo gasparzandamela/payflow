@@ -18,10 +18,10 @@ interface LayoutProps {
 const getMenuItems = (role?: string) => {
   if (role === 'admin_financeiro') {
     return [
-      { name: 'Dashboard', icon: 'home', path: '/financeiro' },
-      { name: 'Cobranças', icon: 'assignment', path: '#' },
-      { name: 'Pagamentos', icon: 'payments', path: '#' },
-      { name: 'Relatórios', icon: 'bar_chart', path: '#' },
+      { name: 'Dashboard', icon: 'home', path: '/financeiro?tab=overview' },
+      { name: 'Cobranças', icon: 'assignment', path: '/financeiro?tab=charges' },
+      { name: 'Pagamentos', icon: 'payments', path: '/financeiro?tab=payments' },
+      { name: 'Relatórios', icon: 'bar_chart', path: '/financeiro?tab=reports' },
       { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
     ];
   }
@@ -50,7 +50,7 @@ interface NavLinkProps {
 const NavLink: React.FC<NavLinkProps> = ({ item, onClick }) => {
   const { t } = useLanguage();
   const location = useLocation();
-  const isActive = location.pathname === item.path;
+  const isActive = (location.pathname + location.search) === item.path;
   return (
     <Link
       to={item.path}
@@ -205,7 +205,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
         {/* Mobile Navigation (Bottom) */}
         <nav className="lg:hidden sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-2.5 z-50 px-2 pb-safe">
           {currentMenuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = (location.pathname + location.search) === item.path;
             return (
               <Link
                 key={item.name}
