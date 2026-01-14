@@ -97,9 +97,12 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     try {
       const { data: txs, error: txError } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (name)
+        `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (txError) throw txError;
       setRecentTransactions(txs || []);
@@ -720,6 +723,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
+                    <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('name')}</th>
                     <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('description')}</th>
                     <th className="text-left py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('method')}</th>
                     <th className="text-right py-4 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t('amount')}</th>
@@ -736,21 +740,28 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                       }
                       return true;
                     })
-                    .map(tx => (
-                    <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{tx.description}</td>
-                      <td className="py-5 px-4 text-slate-600 font-bold text-sm">{tx.payment_method}</td>
-                      <td className="py-5 px-4 text-right font-black text-[#27AE60] text-sm">+{formatCurrency(tx.amount)} MZN</td>
-                      <td className="py-5 px-4 text-center">
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          tx.status === 'Sucesso' ? 'bg-[#EBFAF2] text-[#27AE60]' : 'bg-[#FFF9EB] text-[#F2994A]'
-                        }`}>
-                          {tx.status}
-                        </span>
-                      </td>
-                      <td className="py-5 px-4 text-center text-slate-500 font-bold text-sm tracking-tighter">{new Date(tx.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
+                    .map(tx => {
+                      const date = new Date(tx.created_at);
+                      const monthName = date.toLocaleString('pt-MZ', { month: 'long' });
+                      const formattedDescription = `Pagamento da Mensalidade de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+                      
+                      return (
+                        <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{tx.profiles?.name || '---'}</td>
+                          <td className="py-5 px-4 text-slate-600 font-bold text-sm">{formattedDescription}</td>
+                          <td className="py-5 px-4 text-slate-600 font-bold text-sm">{tx.payment_method}</td>
+                          <td className="py-5 px-4 text-right font-black text-[#27AE60] text-sm">+{formatCurrency(tx.amount)} MZN</td>
+                          <td className="py-5 px-4 text-center">
+                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              tx.status === 'Sucesso' ? 'bg-[#EBFAF2] text-[#27AE60]' : 'bg-[#FFF9EB] text-[#F2994A]'
+                            }`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                          <td className="py-5 px-4 text-center text-slate-500 font-bold text-sm tracking-tighter">{date.toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
