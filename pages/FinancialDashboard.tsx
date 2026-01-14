@@ -59,7 +59,13 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
     cobrancasPendentes: 0,
     alunosInadimplentes: 0,
     pagamentosHoje: 0,
-    valorPagamentosHoje: 0
+    valorPagamentosHoje: 0,
+    receitaPorMetodo: {
+      MPESA: 0,
+      EMOLA: 0,
+      BANCO: 0,
+      ESPECIE: 0
+    }
   });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [dbCharges, setDbCharges] = useState<any[]>([]);
@@ -117,13 +123,29 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       const firstDayMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
-      const { data: monthTxs } = await supabase
+      const { data: monthTxsFull } = await supabase
         .from('transactions')
-        .select('amount')
+        .select('amount, payment_method')
         .eq('status', 'Sucesso')
         .gte('created_at', firstDayMonth);
       
-      const receitasMes = monthTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+      const receitasMes = monthTxsFull?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+
+      const receitaPorMetodo = {
+        MPESA: 0,
+        EMOLA: 0,
+        BANCO: 0,
+        ESPECIE: 0
+      };
+
+      monthTxsFull?.forEach(tx => {
+        const method = tx.payment_method;
+        const amount = Number(tx.amount);
+        if (method === 'MPESA') receitaPorMetodo.MPESA += amount;
+        else if (method === 'EMOLA') receitaPorMetodo.EMOLA += amount;
+        else if (method === 'BANK_TRANSFER' || method === 'BANK_DEPOSIT') receitaPorMetodo.BANCO += amount;
+        else if (method === 'CASH') receitaPorMetodo.ESPECIE += amount;
+      });
 
       const { data: todayTxs } = await supabase
         .from('transactions')
@@ -140,7 +162,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
         cobrancasPendentes,
         alunosInadimplentes: inadimplentes,
         pagamentosHoje,
-        valorPagamentosHoje
+        valorPagamentosHoje,
+        receitaPorMetodo
       });
 
     } catch (err) {
@@ -487,18 +510,49 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
               {/* Placeholder for Donut Chart (Receita por Meio de Pagamento) */}
               <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm min-h-[400px]">
                  <h3 className="font-black text-slate-800 tracking-tight text-lg mb-6">Receita por Meio de Pagamento</h3>
-                 <div className="flex flex-col md:flex-row items-center justify-center gap-12 py-6">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-12 py-6">
                     {/* SVG Donut */}
                     <div className="relative size-48 flex items-center justify-center">
                         <svg className="size-full -rotate-90" viewBox="0 0 100 100">
-                           {/* Mpesa - Red */}
-                           <circle cx="50" cy="50" r="40" fill="none" stroke="#E31B23" strokeWidth="12" strokeDasharray="105 146" strokeDashoffset="0" />
-                           {/* Emola - Orange */}
-                           <circle cx="50" cy="50" r="40" fill="none" stroke="#FF6B00" strokeWidth="12" strokeDasharray="80 171" strokeDashoffset="-105" />
-                           {/* Banco - Blue */}
-                           <circle cx="50" cy="50" r="40" fill="none" stroke="#1E40AF" strokeWidth="12" strokeDasharray="30 221" strokeDashoffset="-185" />
-                           {/* Espécie - Green */}
-                           <circle cx="50" cy="50" r="40" fill="none" stroke="#16A34A" strokeWidth="12" strokeDasharray="36 215" strokeDashoffset="-215" />
+                           {(() => {
+                             const total = stats.receitasMes || 1; // avoid division by zero
+                             const mpesaPerc = (stats.receitaPorMetodo.MPESA / total) * 100;
+                             const emolaPerc = (stats.receitaPorMetodo.EMOLA / total) * 100;
+                             const bancoPerc = (stats.receitaPorMetodo.BANCO / total) * 100;
+                             const especiePerc = (stats.receitaPorMetodo.ESPECIE / total) * 100;
+                             
+                             const circumference = 2 * Math.PI * 40; // 251.32
+                             
+                             const mpesaDash = (mpesaPerc / 100) * circumference;
+                             const emolaDash = (emolaPerc / 100) * circumference;
+                             const bancoDash = (bancoPerc / 100) * circumference;
+                             const especieDash = (especiePerc / 100) * circumference;
+                             
+                             let offset = 0;
+                             
+                             return (
+                               <>
+                                 {/* Mpesa - Red */}
+                                 <circle cx="50" cy="50" r="40" fill="none" stroke="#E31B23" strokeWidth="12" 
+                                   strokeDasharray={`${mpesaDash} ${circumference}`} strokeDashoffset={offset} />
+                                 {(() => { offset -= mpesaDash; return null; })()}
+                                 
+                                 {/* Emola - Orange */}
+                                 <circle cx="50" cy="50" r="40" fill="none" stroke="#FF6B00" strokeWidth="12" 
+                                   strokeDasharray={`${emolaDash} ${circumference}`} strokeDashoffset={offset} />
+                                 {(() => { offset -= emolaDash; return null; })()}
+                                 
+                                 {/* Banco - Blue */}
+                                 <circle cx="50" cy="50" r="40" fill="none" stroke="#1E40AF" strokeWidth="12" 
+                                   strokeDasharray={`${bancoDash} ${circumference}`} strokeDashoffset={offset} />
+                                 {(() => { offset -= bancoDash; return null; })()}
+                                 
+                                 {/* Espécie - Green */}
+                                 <circle cx="50" cy="50" r="40" fill="none" stroke="#16A34A" strokeWidth="12" 
+                                   strokeDasharray={`${especieDash} ${circumference}`} strokeDashoffset={offset} />
+                               </>
+                             );
+                           })()}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                            <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.receitasMes)}</p>
@@ -510,22 +564,30 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#E31B23]"></div>
                           <span className="text-sm font-bold text-slate-600">MPESA</span>
-                          <span className="text-xs font-black text-slate-400 ml-auto">42%</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">
+                            {Math.round((stats.receitaPorMetodo.MPESA / (stats.receitasMes || 1)) * 100)}%
+                          </span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#FF6B00]"></div>
                           <span className="text-sm font-bold text-slate-600">EMOLA</span>
-                          <span className="text-xs font-black text-slate-400 ml-auto">32%</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">
+                            {Math.round((stats.receitaPorMetodo.EMOLA / (stats.receitasMes || 1)) * 100)}%
+                          </span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#1E40AF]"></div>
                           <span className="text-sm font-bold text-slate-600">BANCO</span>
-                          <span className="text-xs font-black text-slate-400 ml-auto">12%</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">
+                            {Math.round((stats.receitaPorMetodo.BANCO / (stats.receitasMes || 1)) * 100)}%
+                          </span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#16A34A]"></div>
                           <span className="text-sm font-bold text-slate-600">ESPÉCIE</span>
-                          <span className="text-xs font-black text-slate-400 ml-auto">14%</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">
+                            {Math.round((stats.receitaPorMetodo.ESPECIE / (stats.receitasMes || 1)) * 100)}%
+                          </span>
                        </div>
                     </div>
                  </div>
