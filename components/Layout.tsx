@@ -21,7 +21,6 @@ const getMenuItems = (role?: string) => {
       { name: 'Dashboard', icon: 'home', path: '/financeiro?tab=overview' },
       { name: 'Cobranças', icon: 'assignment', path: '/financeiro?tab=charges' },
       { name: 'Pagamentos', icon: 'payments', path: '/financeiro?tab=payments' },
-      { name: 'Relatórios', icon: 'bar_chart', path: '/financeiro?tab=reports' },
       { name: 'Configurações', icon: 'settings', path: '/configuracoes' },
     ];
   }
