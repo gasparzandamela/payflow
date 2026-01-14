@@ -469,7 +469,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
             <div 
               className="bg-[#EBF9FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
-              onClick={() => setActiveTab('payments')}
+              onClick={() => setActiveTab('payments', 'today')}
             >
                <div className="size-12 rounded-xl bg-[#2D9CDB] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">account_balance</span>
