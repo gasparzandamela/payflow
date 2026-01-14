@@ -393,7 +393,10 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       ) : activeTab === 'overview' ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 pulse-animation">
-            <div className="bg-[#EBFAF2] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+            <div 
+              className="bg-[#EBFAF2] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => setActiveTab('overview')}
+            >
                <div className="size-12 rounded-xl bg-[#27AE60] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">payments</span>
                </div>
@@ -403,37 +406,49 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                </div>
             </div>
 
-            <div className="bg-[#EBF5FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
-               <div className="size-12 rounded-xl bg-[#137FEC] flex items-center justify-center text-white">
+            <div 
+              className="bg-[#FFF9EB] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => setActiveTab('charges')}
+            >
+               <div className="size-12 rounded-xl bg-[#F2994A] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">schedule</span>
                </div>
                <div>
-                  <p className="text-2xl font-black text-[#137FEC] leading-tight">{stats.cobrancasPendentes}</p>
-                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">{t('pending')}</p>
+                  <p className="text-2xl font-black text-[#F2994A] leading-tight">{stats.cobrancasPendentes}</p>
+                  <p className="text-[11px] text-[#F2994A] font-black uppercase tracking-wider mt-0.5">{t('pending')}</p>
                </div>
             </div>
 
-            <div className="bg-[#FFF9EB] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
-               <div className="size-12 rounded-xl bg-[#F2994A] flex items-center justify-center text-white">
+            <div 
+              className="bg-[#FEEBF0] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => setActiveTab('charges')}
+            >
+               <div className="size-12 rounded-xl bg-[#EB5757] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">warning</span>
                </div>
                <div>
-                  <p className="text-2xl font-black text-[#F2994A] leading-tight">{stats.alunosInadimplentes}</p>
-                  <p className="text-[11px] text-[#F2994A] font-black uppercase tracking-wider mt-0.5">{t('overdue')}</p>
+                  <p className="text-2xl font-black text-[#EB5757] leading-tight">{stats.alunosInadimplentes}</p>
+                  <p className="text-[11px] text-[#EB5757] font-black uppercase tracking-wider mt-0.5">{t('overdue')}</p>
                </div>
             </div>
 
-            <div className="bg-[#FEEBF0] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
-               <div className="size-12 rounded-xl bg-[#EB5757] flex items-center justify-center text-white">
+            <div 
+              className="bg-[#EBF5FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => setActiveTab('payments')}
+            >
+               <div className="size-12 rounded-xl bg-[#137FEC] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">show_chart</span>
                </div>
                <div>
-                  <p className="text-2xl font-black text-[#EB5757] leading-tight">{stats.pagamentosHoje}</p>
-                  <p className="text-[11px] text-[#EB5757] font-black uppercase tracking-wider mt-0.5">{t('today_transactions')}</p>
+                  <p className="text-2xl font-black text-[#137FEC] leading-tight">{stats.pagamentosHoje}</p>
+                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">{t('today_transactions')}</p>
                </div>
             </div>
 
-            <div className="bg-[#EBF9FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4">
+            <div 
+              className="bg-[#EBF9FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
+              onClick={() => setActiveTab('payments')}
+            >
                <div className="size-12 rounded-xl bg-[#2D9CDB] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">account_balance</span>
                </div>
@@ -446,57 +461,74 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             <div className="lg:col-span-7 space-y-8">
-              <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
-                <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-50">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[#EB5757] text-2xl font-black">warning</span>
-                    <h3 className="font-black text-slate-800 tracking-tight text-lg">{t('overdue')}</h3>
-                  </div>
-                  <button onClick={() => setActiveTab('charges')} className="text-xs font-black text-[#137FEC] hover:underline uppercase tracking-tight">{t('view_all')}</button>
-                </div>
-                
-                <div className="py-14 flex flex-col items-center justify-center text-slate-400">
-                  <p className="text-base font-bold tracking-tight text-center max-w-xs">
-                    {stats.alunosInadimplentes === 0 ? (
-                      <><span className="text-slate-900">Nenhuma cobrança</span> está atualmente em atraso.</>
-                    ) : (
-                      <>Existem <span className="text-slate-900 font-black">{stats.alunosInadimplentes} cobranças</span> em atraso.</>
-                    )}
-                  </p>
-                </div>
+              {/* Placeholder for Donut Chart (Receita por Meio de Pagamento) */}
+              <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm min-h-[400px]">
+                 <h3 className="font-black text-slate-800 tracking-tight text-lg mb-6">Receita por Meio de Pagamento</h3>
+                 <div className="flex flex-col md:flex-row items-center justify-center gap-12 py-6">
+                    {/* SVG Donut */}
+                    <div className="relative size-48 flex items-center justify-center">
+                        <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+                           {/* Mpesa - Red */}
+                           <circle cx="50" cy="50" r="40" fill="none" stroke="#E31B23" strokeWidth="12" strokeDasharray="105 146" strokeDashoffset="0" />
+                           {/* Emola - Orange */}
+                           <circle cx="50" cy="50" r="40" fill="none" stroke="#FF6B00" strokeWidth="12" strokeDasharray="80 171" strokeDashoffset="-105" />
+                           {/* Banco - Blue */}
+                           <circle cx="50" cy="50" r="40" fill="none" stroke="#1E40AF" strokeWidth="12" strokeDasharray="30 221" strokeDashoffset="-185" />
+                           {/* Espécie - Green */}
+                           <circle cx="50" cy="50" r="40" fill="none" stroke="#16A34A" strokeWidth="12" strokeDasharray="36 215" strokeDashoffset="-215" />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                           <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.receitasMes)}</p>
+                           <p className="text-[10px] text-slate-400 font-bold uppercase">MZN</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <div className="flex items-center gap-3">
+                          <div className="size-3 rounded-full bg-[#E31B23]"></div>
+                          <span className="text-sm font-bold text-slate-600">MPESA</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">42%</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                          <div className="size-3 rounded-full bg-[#FF6B00]"></div>
+                          <span className="text-sm font-bold text-slate-600">EMOLA</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">32%</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                          <div className="size-3 rounded-full bg-[#1E40AF]"></div>
+                          <span className="text-sm font-bold text-slate-600">EBANK</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">12%</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                          <div className="size-3 rounded-full bg-[#16A34A]"></div>
+                          <span className="text-sm font-bold text-slate-600">DINHEIRO</span>
+                          <span className="text-xs font-black text-slate-400 ml-auto">14%</span>
+                       </div>
+                    </div>
+                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 ml-2">
-                  <span className="material-symbols-outlined text-[#137FEC] text-2xl">history</span>
-                  <h3 className="font-black text-slate-800 tracking-tight text-lg">{t('recent_transactions')}</h3>
-                </div>
-                
-                <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
-                  {recentTransactions.length > 0 ? (
-                    recentTransactions.slice(0, 3).map((tx, idx) => (
-                      <div key={tx.id} className={`p-6 ${idx !== 0 ? 'mt-4 border-t border-slate-50' : ''}`}>
-                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-5">
-                              <div className="size-12 rounded-full bg-[#EBF9F2] flex items-center justify-center text-[#27AE60] ring-4 ring-white shadow-sm">
-                                <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
-                              </div>
-                              <div>
-                                <p className="font-black text-slate-800 text-base tracking-tight leading-tight">{tx.description}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="size-1 rounded-full bg-slate-300"></span>
-                                  <p className="text-xs text-slate-400 font-bold">{new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="font-black text-[#27AE60] text-2xl tracking-tighter">+{formatCurrency(tx.amount)} MZN</p>
-                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">{t('no_recent_transactions')}</div>
-                  )}
-                </div>
+              {/* Placeholder for Bar Chart (Receita Mensal) */}
+              <div className="bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm min-h-[400px]">
+                 <h3 className="font-black text-slate-800 tracking-tight text-lg mb-8">Receita Mensal</h3>
+                 <div className="flex items-end justify-between h-48 gap-3 px-4">
+                    {[
+                      { m: 'Jan', v: 45 }, { m: 'Fev', v: 38 }, { m: 'Mar', v: 55 }, 
+                      { m: 'Abr', v: 42 }, { m: 'Mai', v: 60 }, { m: 'Jun', v: 52 },
+                      { m: 'Jul', v: 68 }, { m: 'Ago', v: 58 }, { m: 'Set', v: 75 },
+                      { m: 'Out', v: 82 }, { m: 'Nov', v: 70 }, { m: 'Dez', v: 88 }
+                    ].map((d, i) => (
+                       <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                          <div className="w-full bg-slate-50 rounded-t-lg relative h-full flex items-end overflow-hidden">
+                             <div 
+                                className="w-full bg-[#137FEC] rounded-t-lg transition-all duration-500 hover:bg-[#1565C0] cursor-pointer"
+                                style={{ height: `${(d.v / 90) * 100}%` }}
+                             ></div>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-black uppercase">{d.m}</span>
+                       </div>
+                    ))}
+                 </div>
               </div>
             </div>
 
