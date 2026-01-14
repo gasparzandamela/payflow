@@ -18,18 +18,25 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
+  const filterParam = searchParams.get('filter') as any;
+
   const [activeTab, setActiveTabInternal] = useState<'overview' | 'charges' | 'payments' | 'reports' | 'create_charge'>('overview');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   // Sync state with URL param
   useEffect(() => {
     if (tabParam && ['overview', 'charges', 'payments', 'reports', 'create_charge'].includes(tabParam)) {
       setActiveTabInternal(tabParam);
     }
-  }, [tabParam]);
+    setActiveFilter(filterParam);
+  }, [tabParam, filterParam]);
 
-  const setActiveTab = (tab: 'overview' | 'charges' | 'payments' | 'reports' | 'create_charge') => {
-    setSearchParams({ tab });
+  const setActiveTab = (tab: 'overview' | 'charges' | 'payments' | 'reports' | 'create_charge', filter: string | null = null) => {
+    const params: any = { tab };
+    if (filter) params.filter = filter;
+    setSearchParams(params);
     setActiveTabInternal(tab);
+    setActiveFilter(filter);
   };
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
@@ -423,7 +430,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
             <div 
               className="bg-[#FFF9EB] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
-              onClick={() => setActiveTab('charges')}
+              onClick={() => setActiveTab('charges', 'pending')}
             >
                <div className="size-12 rounded-xl bg-[#F2994A] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">schedule</span>
@@ -436,7 +443,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
             <div 
               className="bg-[#FEEBF0] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
-              onClick={() => setActiveTab('charges')}
+              onClick={() => setActiveTab('charges', 'overdue')}
             >
                <div className="size-12 rounded-xl bg-[#EB5757] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">warning</span>
@@ -449,14 +456,14 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
 
             <div 
               className="bg-[#EBF5FF] rounded-[1.5rem] p-6 border border-white shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all active:scale-95"
-              onClick={() => setActiveTab('payments')}
+              onClick={() => setActiveTab('payments', 'today')}
             >
                <div className="size-12 rounded-xl bg-[#137FEC] flex items-center justify-center text-white">
                   <span className="material-symbols-outlined text-2xl font-black">show_chart</span>
                </div>
                <div>
                   <p className="text-2xl font-black text-[#137FEC] leading-tight">{stats.pagamentosHoje}</p>
-                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">{t('today_transactions')}</p>
+                  <p className="text-[11px] text-[#137FEC] font-black uppercase tracking-wider mt-0.5">{ t('today_transactions')}</p>
                </div>
             </div>
 
@@ -511,12 +518,12 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#1E40AF]"></div>
-                          <span className="text-sm font-bold text-slate-600">EBANK</span>
+                          <span className="text-sm font-bold text-slate-600">BANCO</span>
                           <span className="text-xs font-black text-slate-400 ml-auto">12%</span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="size-3 rounded-full bg-[#16A34A]"></div>
-                          <span className="text-sm font-bold text-slate-600">DINHEIRO</span>
+                          <span className="text-sm font-bold text-slate-600">ESPÉCIE</span>
                           <span className="text-xs font-black text-slate-400 ml-auto">14%</span>
                        </div>
                     </div>
@@ -587,10 +594,6 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
           <Card className="p-8 rounded-[2rem] border-slate-50 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-black text-slate-900">{t('active_charges')}</h3>
-              <Button onClick={() => setActiveTab('create_charge')} className="text-sm">
-                <span className="material-symbols-outlined text-lg mr-1">add</span>
-                {t('new_charge')}
-              </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -604,7 +607,13 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {dbCharges.map(charge => (
+                  {dbCharges
+                    .filter(charge => {
+                      if (activeFilter === 'pending') return charge.status === 'pending';
+                      if (activeFilter === 'overdue') return charge.status === 'pending' && new Date(charge.due_date) < new Date();
+                      return true;
+                    })
+                    .map(charge => (
                     <tr key={charge.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{charge.profiles?.name || t('student')}</td>
                       <td className="py-5 px-4 text-slate-600 text-sm font-bold">{charge.description}</td>
@@ -640,7 +649,15 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {recentTransactions.map(tx => (
+                  {recentTransactions
+                    .filter(tx => {
+                      if (activeFilter === 'today') {
+                        const today = new Date().toISOString().split('T')[0];
+                        return tx.created_at.startsWith(today);
+                      }
+                      return true;
+                    })
+                    .map(tx => (
                     <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-5 px-4 font-black text-slate-800 text-sm tracking-tight">{tx.description}</td>
                       <td className="py-5 px-4 text-slate-600 font-bold text-sm">{tx.payment_method}</td>
