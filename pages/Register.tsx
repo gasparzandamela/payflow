@@ -8,6 +8,8 @@ import Button from '../components/Button';
 import Logo from '../components/Logo';
 import { supabase } from '../supabaseClient';
 import { useLanguage } from '../components/LanguageContext';
+import { useToast } from '../components/Toast';
+import Alert from '../components/Alert';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
@@ -15,6 +17,7 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onRegister }) => {
   const { t } = useLanguage();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,7 +58,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
 
       if (result.user) {
          if (result.message === 'Check your email') {
-             alert(t('account_created_check_email'));
+             addToast(t('account_created_check_email'), 'info');
              navigate('/login');
          } else {
              // Auto-logged in
@@ -136,9 +139,9 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
+                <Alert type="error" className="mb-2">
                   {error}
-                </div>
+                </Alert>
             )}
             <Input 
               label={t('full_name_label')}

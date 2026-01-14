@@ -8,6 +8,7 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import { useLanguage } from '../components/LanguageContext';
+import { useToast } from '../components/Toast';
 
 interface PaymentFormProps {
   onContinue: (details: PaymentDetails) => void;
@@ -24,6 +25,7 @@ interface FormErrors {
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) => {
   const { t } = useLanguage();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const chargeFromState = location.state?.charge;
@@ -91,7 +93,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onContinue, initialData }) =>
 
     // Validar se gerou dados para transferência
     if (formData.paymentMethod === 'BANK_TRANSFER' && !isGenerated) {
-        alert(t('generate_bank_data_first'));
+        addToast(t('generate_bank_data_first'), 'warning');
         return;
     }
 

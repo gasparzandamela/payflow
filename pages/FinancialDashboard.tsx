@@ -6,6 +6,8 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Modal from '../components/Modal';
 import { useLanguage } from '../components/LanguageContext';
+import { useToast } from '../components/Toast';
+import Alert from '../components/Alert';
 import { User, PAYMENT_METHODS, PaymentMethodType } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -15,6 +17,7 @@ interface FinancialDashboardProps {
 
 const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const { t } = useLanguage();
+  const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
@@ -878,7 +881,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
             <Input label="Referência" placeholder="Número da referência" />
             <div className="flex gap-3 mt-6">
               <Button variant="secondary" fullWidth onClick={() => setShowPaymentModal(false)}>Cancelar</Button>
-               <Button fullWidth onClick={() => { alert(t('payment_registered')); setShowPaymentModal(false); }}>{t('confirm_button')}</Button>
+               <Button fullWidth onClick={() => { addToast(t('payment_registered'), 'success'); setShowPaymentModal(false); }}>{t('confirm_button')}</Button>
             </div>
           </div>
         </Modal>

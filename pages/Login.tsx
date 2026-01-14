@@ -8,6 +8,7 @@ import Button from '../components/Button';
 import Logo from '../components/Logo';
 import { supabase } from '../supabaseClient';
 import { useLanguage } from '../components/LanguageContext';
+import Alert from '../components/Alert';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -98,9 +99,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
+                <Alert type="error">
                   {error}
-                </div>
+                </Alert>
               )}
               <div className="space-y-4">
                   <Input 
