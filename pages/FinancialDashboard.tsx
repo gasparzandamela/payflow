@@ -50,6 +50,7 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [chargeSearchTerm, setChargeSearchTerm] = useState('');
 
   // Real Data States
   const [stats, setStats] = useState({
@@ -592,8 +593,18 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       ) : activeTab === 'charges' ? (
         <div className="space-y-6 animate-in fade-in duration-500">
           <Card className="p-8 rounded-[2rem] border-slate-50 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
               <h3 className="text-xl font-black text-slate-900">{t('active_charges')}</h3>
+              <div className="relative w-full md:w-80">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-black">search</span>
+                <input 
+                  type="text" 
+                  placeholder="Pesquisar estudante ou mensalidade..." 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 placeholder:text-slate-400"
+                  value={chargeSearchTerm}
+                  onChange={(e) => setChargeSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -609,6 +620,12 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                 <tbody className="divide-y divide-slate-50">
                   {dbCharges
                     .filter(charge => {
+                      const matchesSearch = 
+                        (charge.profiles?.name || '').toLowerCase().includes(chargeSearchTerm.toLowerCase()) ||
+                        (charge.description || '').toLowerCase().includes(chargeSearchTerm.toLowerCase());
+                      
+                      if (!matchesSearch) return false;
+
                       if (activeFilter === 'pending') return charge.status === 'pending';
                       if (activeFilter === 'overdue') return charge.status === 'pending' && new Date(charge.due_date) < new Date();
                       return true;
