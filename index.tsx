@@ -19,6 +19,7 @@ Sentry.init({
 });
 
 import { LanguageProvider } from './components/LanguageContext';
+import { ToastProvider } from './components/Toast';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -30,7 +31,9 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <LanguageProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>
