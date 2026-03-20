@@ -26,43 +26,70 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    const checkSession = async () => {
+    const checkSession = async (silent = false) => {
       try {
         const response = await fetch('/api/proxy/auth/v1/user');
         
         if (response.ok) {
           const u = await response.json();
           
-          // Buscar perfil do utilizador para obter o papel e metadados
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, avatar_url, pin')
-            .eq('id', u.id)
-            .single();
-          
-          setUser({
-            id: u.id,
-            name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
-            email: u.email || '',
-            role: profile?.role || 'student',
-            avatar_url: profile?.avatar_url,
-            pin: profile?.pin
-          });
-          
-          // Fetch transactions after user is identified
-          fetchTransactions();
+          if (!silent) {
+            // Buscar perfil do utilizador para obter o papel e metadados
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role, avatar_url, pin')
+              .eq('id', u.id)
+              .single();
+            
+            setUser({
+              id: u.id,
+              name: u.user_metadata?.name || u.email?.split('@')[0] || 'Usuário',
+              email: u.email || '',
+              role: profile?.role || 'student',
+              avatar_url: profile?.avatar_url,
+              pin: profile?.pin
+            });
+            
+            // Fetch transactions after user is identified
+            fetchTransactions();
+          } else {
+            // Se foi um refresh silencioso via mudança de aba e a conta mudou
+            setUser(prev => {
+              if (prev && prev.id !== u.id) {
+                window.location.reload();
+              }
+              return prev;
+            });
+          }
         } else {
-          setUser(null);
+          // Utilizador não autenticado
+          setUser(prev => {
+            // Se estava logado e ao voltar à aba o backend reporta 401 (deslogou noutra aba)
+            if (silent && prev) {
+              window.location.reload();
+            }
+            return null;
+          });
         }
       } catch (err) {
         console.error('Session check failed:', err);
-        setUser(null);
+        if (!silent) setUser(null);
       } finally {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       }
     };
 
     checkSession();
+
+    // Sincronização de Sessão Multitab (Cenário A - Mitigação de Cookies partilhados)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSession(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const fetchTransactions = async () => {

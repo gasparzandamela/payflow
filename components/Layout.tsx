@@ -127,10 +127,24 @@ const Layout: React.FC<LayoutProps> = ({ children, user, title }) => {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <nav className="p-4 space-y-2">
-              {currentMenuItems.map((item) => (
-                <NavLink key={item.name} item={item} onClick={() => setIsMobileMenuOpen(false)} />
-              ))}
+            <nav className="p-4 space-y-2 flex flex-col h-[calc(100vh-80px)]">
+              <div className="flex-1 space-y-2">
+                {currentMenuItems.map((item) => (
+                  <NavLink key={item.name} item={item} onClick={() => setIsMobileMenuOpen(false)} />
+                ))}
+              </div>
+              <div className="mt-auto border-t border-slate-100 pt-4 px-2">
+                <button 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setShowLogoutModal(true);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-red-500 hover:bg-red-50 transition-all group font-bold text-sm"
+                >
+                  <span className="material-symbols-outlined text-[22px] transition-transform group-hover:-translate-x-1">logout</span>
+                  <span>{t('logout')}</span>
+                </button>
+              </div>
             </nav>
           </aside>
         </div>

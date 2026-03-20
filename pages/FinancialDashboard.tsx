@@ -201,11 +201,17 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
       return;
     }
 
+    const amountValue = parseFloat(formData.amount);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      alert('O montante da cobrança deve ser maior que zero.');
+      return;
+    }
+
     try {
       const chargesToInsert = selectedStudentIds.map(studentId => ({
         student_id: studentId,
         description: formData.description || 'Propina Mensal',
-        amount: parseFloat(formData.amount),
+        amount: amountValue,
         due_date: formData.due_date,
         created_by: user.id,
         status: 'pending'
@@ -404,6 +410,8 @@ const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ user }) => {
                   <Input 
                     label={t('amount')} 
                     type="number" 
+                    min="0.01"
+                    step="0.01"
                     placeholder="2500.00" 
                     className="bg-slate-50 border-slate-100 py-4 rounded-xl text-xl font-black"
                     value={formData.amount}
